@@ -1,0 +1,674 @@
+# UTZLINE Scheduler — installable app
+
+**Current version: v47 (RC 1.0)** (its own independent version line, separate from every other app in the family — bump this line, and add a dated entry below, every time a new build ships.)
+
+**v47 (2026-10-02) — RC 1.0: builder logo on the top bar, logos folder, reversed Machined, drag and drop only.**
+
+- **Builder logo at the far right of the top bar** (Andrew: *"builder logo on the far right of the top bar"*): one logo in the header, just left of the day / night button, shown only while a project is open and the builder has a logo (it is hidden on the project list).
+- **Company and builder logos live in a `logos` folder** at the Projects root (Andrew: *"move the company and builders logos into a logos folder"*). Every app reads `logos/` first and falls back to the old root files, so nothing breaks before the move; UTZLINE Projects writes only into `logos/` and copies the root files across once (copies -- nothing is moved or deleted). `logos` is never listed as a project.
+- **Reversed Machined** (Andrew: *"if something is flagged as machined, but then the machining gets reversed, the flags need to be reversed also"*): the status now honours the Machine Schedule's `statusRetract` event -- undo a cut there and this app drops the item back to its earlier stage too (history shows the entry struck through, then "reversed"). Later re-machining counts normally.
+- **Drag and drop only -- no file selector** (Andrew: *"i want the entire system to be drag and drop (no file selector)"*): Shop drawings (Sent / Returned to resubmit / Approved), Job notes and Sub orders are drop boxes only -- no tap-to-choose. A file dropped anywhere else is ignored (it never navigates away). On a touch-only tablet, where nothing can be dropped, a long press on the box opens the file list.
+- **Dark mode controls**: drop-downs, their open lists, text boxes and buttons that no style had touched now get a real dark background and readable text (one shared rule), and the day / night contrast was swept for white-on-pale text. The two dark-mode background variables that pointed at themselves (`--bg`, `--panel2`) are fixed -- panels had no background in night mode.
+- **"Opening…" sign-in cover** re-inlined: the table is covered while the sign-in settles so it never flashes the list behind it.
+
+**v46 (2026-10-01) — RC 1.0: the schedules' "Are you still there?" timeout; Status column after Work order #; shop drawing status; builder logo on project rows.**
+
+- **"Are you still there?"** (Andrew: *"can we add a timeout on the schedules, that asks are you still there and closes it after inactivity"*). After **15 idle minutes** (no pointer, key, wheel, scroll or touch) a dialog asks *Are you still there?* with a 60-second countdown. **I'm here** carries on; unanswered, the app closes itself back to its start -- a tablet or phone goes back to the sign-in list, a PC reloads to the start screen. Nothing needs saving first (every change is its own file). The length is 15 minutes unless the device sets `utzline:idleMinutes` (0 = never) -- there is no settings screen for it yet. Shared module `shared/idle/idle.js` (inlined between `UTZLINE-IDLE` markers in all three schedule apps).
+- **Status column** now follows **Work order #** by default in the Overall and project tables (Andrew: *"move this status column to here as default"*). A device that saved its own column order (Columns button) keeps it; Reset gives the new default.
+- **The item page's Shop drawing line** now starts with the drawing's status -- **Sent**, **Returned to resubmit** or **Approved**, whichever was filed last (**None yet** when nothing is filed) -- then the existing "Its own drawing" / "One drawing covers N items".
+- **Builder logo on each project row** of the Home list, at the far right (before the chevron), scaled to the row and keeping its shape. Painted after the list, so the list still opens at once; a project with no builder or logo reads as before. The builder logo beside a project's name (header) can now be up to 240 px wide, so a wide logo's white window stretches to fit it (same 30 px height).
+- **Not done:** *Sub Orders files add about 60 calls every time the Scheduler opens.* The Scheduler already lists the Orders folder once and reads only the items that have an orders file, so those 60 are items that really have orders; going lower needs the per-level summary file (queued), not a quick change.
+- Test: `pdftest-scheduler/run_idle_timeout_and_status_col.js`.
+
+**v45 (2026-10-01) — RC 1.0: code-only file names -- joinery codes, not descriptions, in every file and folder name (path-limit round, fourth build).**
+
+- Andrew: *"have a real good think about how we can minimise filepaths, maybe we need to lose the joinery descriptions and just have joinery codes. give me a solid solution"* -- then *"I have no actual current files so dont care if I need to start again"*. Every folder and file kept for ONE joinery item is now named by the item's **file name** -- its joinery code (e.g. `JG.33.1`; a second item with the same code is `JG.33.1 (2)`), chosen once by UTZLINE Projects when the item is made or imported and saved on the item in `joinery-items.json` (`fileKey`), never changed afterwards -- instead of `<Level> - <Room> - <Code>` (64 characters for the pilot's `Ground Floor - G.33 - Change Cubical & Patient Consent - JG.33.1`). The level, room and description stay inside the records and `joinery-items.json`, so every screen still shows them.
+- Records carry the author's **initials** and a two-digit-year stamp (`JG.33.1 -- AU - 26-10-01 16-25-35-281 - set.json`, in a level folder cut to 30 characters); imported files are **renamed** on the way in (the name they came in with is kept in the record or the `.json` beside the file and is what the screen shows). On the pilot's own folder (88 characters) the longest path is now 121 of the 163 the project folder leaves -- project folders up to about 130 characters deep work.
+- **Clean break:** nothing is read under the old long names. Set the project up again in UTZLINE Projects (it gives every item its file name when the project is opened) -- the other apps pick the names up from `joinery-items.json`.
+- Scheduler: Every per-item write (shop drawings, job notes, Sub Orders attachments, ITP/rework/event files) uses the item's file name; the shop-drawing card has **Sent / Returned to resubmit / Approved**.
+
+**v44 (2026-10-01) — RC 1.0: path-limit round, third build — the folder-path banner only when records really can't fit; shop drawings renamed on import and fitted to the path limit.**
+
+- Andrew, with the banner on screen (*"leaves only 163 for UTZLINE's own files (long room names need about 170)"*): *"what can we do, im already in the root folder for onedrive"*. 163 is plenty for the short record names -- his longest record is 150 characters after the project folder (141 with the shortest branch) -- the 170 was set for the old long names. The banner now shows only when the project's folder path leaves less than even the shortest names need (**135**), and then says so (*"even the shortest record names need about 135, so some records may not save"*).
+- A record that does have to take a short `_hash` name (a very long room-and-code) is saved and read like any other, so it no longer raises the banner: the page gets a `utz-path-limit` event (why `fallback`) and a console note. The banner stays for a record that **can't** be saved at all.
+- **Shop drawings are renamed on import** (Andrew: *"drawings should be renamed to suit when imported. not use the old filenames"*). A drawing added here is saved as `REV n - <saved> - <the item's code>.pdf` (`REV 0 - 2026-10-01 16-25-35 - JG.33.1.pdf`), whatever the file was called; the original name is kept in the `.json` beside it (`original`) and the dialog says so. Existing drawings keep their names. This fixes *"Couldn't save that"* on **Add returned shop drawing** for JG.33.1 (screenshot): Windows' 260-character path limit again — the item's folder name is 64 characters, the old file name 51 more, 166 after his project folder, which leaves 163 — and the failed save left an **empty 0-byte PDF** in `Returned`.
+- A name is now cut to what the path leaves (measured once per project by the event store's probe; none on Android), a drawing or job note that can't fit at all is refused with the path message (*"Windows can't store a file this deep … nothing was changed"*), and a file this app just created that then can't be written is taken away again when it is empty (never one with bytes in it). Job notes: the original name is cut to 40 or to what fits.
+
+**v43 (2026-10-01) — RC 1.0: path-limit round, second build — `~` is a name Chrome refuses; record names with initials and a two-digit year.**
+
+- Andrew's first run of the morning build showed the banner with *"leaves only 0"*: Chrome's File System Access API refuses any file name containing a `~` (it treats the tilde as a reserved Windows character), so every probe file -- and the `~hash` fallback names -- would have been refused. The markers are `_` now (`_hash`, 9 characters) and the probe name has no tilde; measured on the pilot folder the real figure is 163.
+- Andrew: *"change usernames to initials, year from 2026 to 26, remove milliseconds?"* -- a record's on-disk name part is now `<initials> - <yy-mm-dd hh-mm-ss-mmm> - <kind>.json` (`AU - 26-10-01 13-09-18-862 - set.json`; the record's body still carries the full name and time, every reader folds from the body). The milliseconds stay: two saves in the same second must never land on one name. Together with the level no longer in the name, the pilot's longest record is 141 characters after the project folder (was 166; it has 163).
+
+**v42 (2026-10-01) — RC 1.0: Windows' 260-character path limit — records for long room names were saved empty.**
+
+- **Why:** Andrew: *"some get corrupted from the import (dont bring in the pc date for delivery), then i cant change them in the schedule"* and Set schedule's *"Couldn't save this schedule -- try again"*. Windows limits a file's full path to 260 characters. The pilot project sits in `C:\Users\andrewu\OneDrive - Metro Joinery\UTZLINE Pilot\3756 - Jones Radiology Mt Barker\` (88 characters) and a schedule record for a long room name ("G.10 - Female Amenities Staff") reached 253 in full -- Chrome writes through a `<name>.crswap` swap file (7 more), so the file was created EMPTY and the save failed. 27 of the 72 schedule files in that project's Ground Floor folder were empty; the same limit was behind the items that never took the PC date on import.
+- **Now:** a new record's name no longer repeats the level its folder already names -- `UTZLINE Events/<Branch>/<Level>/<Room> - <Code> -- <name> - <stamp> - <kind>.json` (the room-and-code part capped at 70 characters) -- which is 15-plus characters shorter; every record already on disk under the long name still reads, old and new side by side. When even that doesn't fit, the empty file is removed and the record is kept under a 9-character `~hash` name, and a banner says why. On a PC the first write to a project measures what its folder path leaves (a few empty probe files under `UTZLINE Events`, made and removed again) and the banner shows early when that is under the ~170 characters long room names need: *move the Projects folder nearer the drive root (for example `C:\UTZLINE Projects`), or shorten the project folder's name*. Nothing of Andrew's is touched or renamed.
+- **Update every device:** an app still on the previous version doesn't see records written under the new short names (the same as when the level folders came in).
+- Also: a shop drawing's saved name keeps 22 characters of the original file name (cut at a word) (the full name is in the .json beside it), a job note's 40, and a new drawing's folder is 12 characters instead of 24 -- those paths were the next to go over.
+
+**v41 (2026-09-30) — RC 1.0: day / night mode, status icons on the plan (blue, 25% smaller), tick-box status filters, hide / rearrange columns, one drawing for several items, the builder's logo.**
+
+- **Day / night mode** (Andrew: *"give me day / night mode for all apps"*): a ☀ / ☾ button at the top right of every screen switches between the dark look and a new light one; with nothing chosen the app follows the device's own setting. The choice is kept per device and shared by the UTZLINE apps on it.
+- Andrew: *"all icons to have this fill colour as default"* + *"make the text and icons 25% smaller"*: the level plan's markers are drawn the Site Measure way (white ring, black ring, **blue #0011ff** fill, the delay colours stay in the table's Delay column), the dot and the label text 25% smaller, with the item's **status icon** on the dot (🏭 in manufacture, ⚙️ machined, 📦 ready to dispatch, 🚚 delivered, 🏆 installed, 📏 check measured).
+- Andrew: *"these need to be tick boxes (drop down then tick on / off)"*: the **status filters** (Overall + project tables) are drop-downs of tick boxes -- tick any number of statuses, none ticked = all; remembered per device.
+- Andrew: *"all schedules need the option to hide, rearrange columns"*: a **Columns** button beside the Text size bar lists the table's columns -- untick to hide, ▲ ▼ to move; the frozen identity columns and the actions column stay put; remembered per device, per table.
+- **One shop drawing / job note for several items** (Andrew: *"merge option that merges the pins by selection, then you only upload one drawing for that merge and it flags everything on that merge at once"*): pins merged in UTZLINE Projects form a drawing group; a shop drawing or job note dropped on any member here is saved on **every** member (each keeps its own copy and REV numbering); the item page says *One drawing covers N items*. Every "sent" shop drawing now also records who uploaded it (Project Saves/Shop Drawing Uploaders) -- the Viewer lists those people as the drafters on reworks.
+- **Builder's logo** beside the project's name (set up once per builder in UTZLINE Projects; the logo lives at the Projects root, the project keeps only the builder's name).
+- The rework register / page shows the new **Drafter** line (flagged to whom, and their Resent to CNC / Not required / Passed on answer, made in the Viewer); the rework PDF carries it and the builder's logo.
+
+**v40 (2026-09-30) — RC 1.0: sign in on open (tablets and phones), Change folder bottom right, a timer on the refresh, Overall + Excel backups hidden on tablets, cutting file locked with a PIN.**
+
+- Andrew: *"can you put a small timer next to the refreshing from the folder so i can see how long it took (next to items once synced)"*. While a schedule refreshes from the folder, the *refreshing from the folder…* note carries a live timer (⏱ 4.2 s); once it has synced, the item count carries how long it took (*196 items · synced in 12.4 s*) -- on the Overall schedule and on a project's schedule, and the time stays on the count when you filter.
+- Andrew: *"on next update, when opening the apps, it should as[k] for you to login, currently it just loads to the last user that was logged in, some of these tablets will have multiple users (employees)"*. **On a tablet or phone the app now asks who is using it** -- a full-screen *Who's using this?* list (every name in `utzline-users.csv`, plus *+ Add a new name…*) each time the app is opened, and again when it has been in the background for **10 minutes or more**. Tap your name and enter your 4-digit PIN on the usual numberpad. The name saved on the device is only treated as "the last person" now; if another app on the device signs in as someone else, this one asks again when it comes back to the front. **A PC is unchanged** (it keeps the last user), and the PIN numberpad, the registry and the name stamped on saves are as before.
+- Andrew: *"move the change folder to the bottom right of the page, and smaller"*. The **Change folder** control on the project list is now a small button fixed to the bottom-right corner of the screen (its tooltip keeps the full wording, *Choose a different Projects folder*) instead of a full-size button / link in the list.
+- Andrew: *"lets hide overalls on the tablets"*. On a **tablet or phone** the **Overall schedule** card on the home screen is hidden (a PC keeps it); a single project's schedule opens as before.
+- Andrew: *"tablets do not need the excel backups button, hide that"*. On a tablet or phone the **Excel backups** card (and its *Back up now* button) is hidden; the daily backup itself still runs on a PC.
+- Andrew: *"once a cutting file name is pasted, lock it, can be edited with a pin"*. A saved **cutting file name is locked** (read-only, dashed box) straight after it is pasted -- in the table and on the item's summary page. Tap the **padlock** beside it, enter **your own PIN**, and the box opens for an edit (leave it unchanged and it locks again; after saving it locks again). An empty box is still open for pasting with no PIN. Every change is still a signed, dated event, with the old names kept under *Before:*.
+- Same fix as the Solid Surface Schedule (Andrew: *"these should not be stacked or cutoff"*): the row's buttons stay in one row in a real table cell, and the bottom scroll bar now reaches the whole width of the table (it stopped about 24 px short, clipping the last button).
+
+
+**v39 (2026-09-30) — RC 1.0: records are kept one folder per level — much faster on a tablet.**
+
+- Andrew: *"how can we speed up schedule loading on the app android"* / *"all are slow"*. Every status, schedule date, cut, solid-surface tick, cutting file and note is still one small file per change (nothing is ever rewritten), but they now go in **one folder per level** — `Project Saves/UTZLINE Events/<record type>/<Level>/`, each file named `<Level> - <Room> - <Code> -- <name> - <time> - <kind>.json` — instead of one folder per joinery item. A schedule now lists a handful of level folders instead of hundreds of item folders; on the tablet each folder costs about a quarter of a second.
+- Records a project already has in the old item folders are still read, and both places are shown together (a record found in both counts once). UTZLINE Projects shows **Speed up this project** on a project that still has old folders and moves them — each record copied, checked, then its old copy removed.
+- **Update every tablet and PC.** An app older than this one doesn't look in the level folders, so it won't see records written by this one — and only press *Speed up this project* once every device is updated.
+
+
+**v38 (2026-09-30) — RC 1.0: faster schedule loading on Android.**
+
+- Andrew: *"how can we speed up schedule loading on the app android"* / *"all are slow"*. On his tablet every folder call takes about a quarter of a second. Building a project's rows looked up each item's Solid Surface Completion folder and Sub Orders file by name — two calls per item, almost all for things that don't exist. Each of those folders is now listed once (Solid Surface Completion through the same cached fold as statuses and schedules), and only Sub Orders files that are there are read. On a 200-item test job that's about 400 fewer calls per open (the Overall Schedule saves the same for every project).
+
+**v37 (2026-09-29) — RC 1.0: the ITP cards read the ITPs' change files.**
+
+- The three ITPs now write a small change file with every checklist save, as well as the whole checklist (Andrew: *"shouldnt everything run like this. isnt that the ultimate failsafe"*). The joinery item's ITP card and the delivery pin / snapshot read the whole file plus any change files it hasn't taken in yet, so when two tablets saved the same checklist offline, both tablets' changes show here.
+
+**v36 (2026-09-29) — RC 1.0: click a row to open its item; Cutting file and Notes columns.**
+
+- **Cutting file and Notes columns, and on the joinery summary page.** Andrew: *"schedules needs a column where a cutting filename can be pated into and stored. this becomes part of the joinery summary. also a notes column where notes can be added, saved, deleted one by onr"*. All three schedules have both, and they share the same records, so what's entered in one shows in the others (Projects gets them on its next update).
+  - **Cutting file:** paste the file name into the box in the row and it saves straight away; or type it and press Enter. Clear it and press Enter to remove it. The summary page shows who set it and when, and the names it had before.
+  - **Notes:** tap the Notes cell (count + latest note) to open the item's notes: write one, **Save note**; each note has its own **Delete** (tap twice). The summary page has the same Notes card.
+  - Both are signed with the device's name, like a cut or a status. Storage follows the family's event rule — one small file per change, never rewritten: `Project Saves/Joinery Cutting File/<Level> - <Room> - <Code>/` and `Project Saves/Joinery Notes/<Level> - <Room> - <Code>/`. Shared code: `shared/item-extras/`.
+- **Click a row to open its item.** Andrew: *"also make the schedules clickable to open the summary like the projects page."* A plain click or tap anywhere on a row opens that item's page, the same as a row in the Projects Joinery Register (and the same page as Open item, a long press or a right-click). Clicks on buttons, and in the cells that do their own thing on a tap (Status history, Ordered, the cut / Completed / Delivered buttons, the action buttons), still do only that. A drag doesn't count as a click.
+- **Reads are retried twice** (0.6 s and 1.5 s, was once), and an empty event file — a save that never finished — is ignored instead of making the item "unreadable".
+- **No "still syncing?" guesses.** It was usually wrong. Messages now say "couldn't read … just now".
+
+**v35 (2026-09-29) — RC 1.0: job notes always move the status on; pinned, zoomable tables; smaller markers.**
+
+- **Job note → In manufacture, every time.** Andrew (screenshot of *"The job note is saved, but its status couldn't be updated just now (still syncing?)"*): *"when adding a job note, status did not update. alot of others worked first"*.
+  - **The cause.** The status step read every file in the item's Joinery Status folder strictly, and gave up if any single file couldn't be read. That could be another app's file being written at that moment, or a 0-byte file left by a save that never finished — and a 0-byte file would fail every job note on that item for good.
+  - **The fix.** The step can't move anything backwards, because an item's status is the highest step in its folder. So each file is now read with two retries, empty files are ignored, and "In manufacture" is written unless the files that did read already show it or later.
+  - If the write itself fails, the message says why, instead of "syncing".
+- **Every save is retried and checked.** A failed or short write is tried again 0.5 s and 1.5 s later. This covers schedule changes, job-note and status events, orders, the names list and the Excel backups. On Windows, a sync client or antivirus holding a brand-new file for a moment used to fail the save.
+- **Tables: titles always visible, and zoomable.** Andrew: *"these title bars need to be always visable, and the tables need to be zoomable"*.
+  - Both schedule tables scroll inside their own box, up to the screen's height. The column titles stay pinned while the rows scroll under them; the frozen columns' titles are pinned both ways.
+  - **Text size − 100% +** above each table zooms the whole table: text, pills and buttons, 60–200%. Tap the % to go back to 100%.
+  - A two-finger pinch, or Ctrl + mouse wheel, zooms too. The size is kept per table on this device.
+- **Plan markers 20% smaller.** Andrew: *"make the indicator dots about 20% smaller (and the icons)"*. The dots are drawn at 0.8 × their saved size, the same as Projects, Site Measure and the ITPs. Tapping a marker still uses the full size.
+- Tests: `pdftest-scheduler/run_scheduler_v35.js`.
+
+**v34 (2026-09-29) — RC 1.0.** Andrew: *"ok, now change them all to version RC 1.0. and have that on the logos (small)"*.
+
+- The app is now **RC 1.0** (release candidate 1.0) across the UTZLINE family. A small **RC 1.0** tag sits beside the logo in the header.
+- The build number (v34) still counts up underneath, so installed copies pick up each update. It's also what the Windows installer "Setup RC 1.0" contains.
+
+**v33 (2026-09-29) — 31 working days by default, For Construction job notes, shaded rows, backup at the bottom.**
+
+- **Edit schedule starts 31 working days out.** Andrew: *"when you click on edit schedule, automattically set the date to 31 days into the future (still editable)"*, *"main schedule only"*.
+  - An item with no date of its own (nothing set yet, or only the project's PC date) opens with its required delivery date **31 working days from today**.
+  - With the 30 working-day lead time, manufacture then starts tomorrow. 31 calendar days would put the start date about a week and a half in the past, and Save refuses that.
+  - A date someone already set is shown as it is.
+  - For a PC-date item the dialog says so and has **Use the PC date** to go back to it. Saving the PC date with only a new lead time keeps it following the PC date.
+- **Job notes are "For Construction".** Andrew: *"a job note is IFC, and this gets a light grey watermark on the pdf stating IFC"*, then *"make that For Construction watermark"*.
+  - Every page of a job note dropped on the item page gets **FOR CONSTRUCTION** in light grey, corner to corner. The saved file is the stamped one, so every app shows it.
+  - Portrait, landscape and rotated pages all come out the right way up.
+  - A PDF that can't be edited (e.g. password-protected) is saved as it is, and the toast says so.
+  - The PDF library (`pdf-lib.min.js`, MIT) is loaded only when a job note is added.
+- **Rows shaded by their delay.** Andrew: *"i want the background of the row lightly shaded (like the delivery overdue button) based on that delay comment. on track blue. delivered on time green"*.
+  - Every schedule row takes a light tint of its main delay pill:
+    - red: delivery overdue or delivered late
+    - amber: manufacture start overdue
+    - teal: delivery due soon
+    - blue: on track (the On track pill is blue now too)
+    - green: delivered on time or early
+    - no tint: no schedule
+  - Frozen columns stay solid.
+  - The actions column is now a normal table cell, so it takes the tint and borders too.
+- **Excel backups card at the bottom of Home.** Andrew: *"move the backup button on the schedules to the bottom of the page"*.
+- **Who added each shop drawing.** A small `.json` is saved beside each shop drawing added here (same name). Every app lists only the PDFs, so nothing else notices it. UTZLINE Projects v36's History card reads it.
+- Tests:
+  - New: `run_v33_schedule_default_and_for_construction.js`, `run_v33_row_shading.js`.
+  - Updated: `run_v32_pc_date_note.js`, `run_v32_shop_drawings.js`, `run_item_page_uploads.js`.
+
+**v32 (2026-09-28) — "PC Date", long press on a row, Sent / Returned shop drawings.**
+
+- **"PC Date".** UTZLINE Projects v35 gives every item the project's PC date as its required delivery date, with the note "PC Date".
+  - The date shows a **PC Date** tag in both schedule tables, on the item page and on the plan marker's summary.
+  - The Set schedule dialog says when the date is the PC date. Changing only the lead time keeps it following the PC date; a new date makes it the item's own.
+  - Folds saved by v31 on a device are read again once, so the tag shows straight away.
+- **Long press a row to open its item page.** Andrew: *"in the schedules, make it so a long press on a row takes you to that joinery item summary page"*.
+  - Hold a finger (or the mouse) on any part of a row that isn't a button for about half a second; the row tints while you hold. Right-click does the same.
+  - Scrolling the table cancels it, and the tap that ends a long press never opens a cell's popup.
+- **Shop drawings: Sent and Returned.** Andrew: *"shop drawings need a sent and a returned section"*, *"and second shop drawing + for a joinery item will alwasy be a new revision"*, *"we need the option to open all revisions, not just the latest one, have a button that goes to the revisions"*, *"we call them REV A REV B and so on"*.
+  - The card has two parts, **Sent** and **Returned**, and each is its own drop target (or tap its dashed box).
+  - A sent drawing is always the item's next revision (REV A, then REV B, C…) in the item's drawing folder. There's no "new drawing" choice any more.
+  - A returned copy is filed against the sent revision it answers (the latest, or pick another) in `<drawing>/Returned/REV <letter> - <date time> - <name>.pdf`. If the chosen revision has gone by Save time, nothing is written.
+  - Each part shows its latest, with **All revisions (n)** / **All returned (n)** to open any of them. Files saved as REV 0/1/2 show as REV A/B/C.
+- Fixes found while testing:
+  - Several job notes dropped at once could overwrite each other's event files (they're named to the millisecond); each event now gets its own time.
+  - The Ordered hover popup no longer stays over the item page.
+  - Saving a shop drawing refreshes only that card, so it doesn't reload the overlay and delivery images.
+- Tests:
+  - New: `run_v32_pc_date_note.js`, `run_v32_row_long_press.js`, `run_v32_shop_drawings.js`, `run_v32_event_file_collision.js`.
+  - Updated: `run_item_page_uploads.js`, `run_joinery_item_page.js`.
+
+**v31 (2026-09-28) — Drop shop drawings, job notes and orders onto the joinery item page; rework register updates.**
+
+**Drag and drop on the Joinery Item page.** Andrew: *"in the joinery summary pages on the schedule, we need the option to drag and drop shop drawings / job notes / orders onto here also, in its associated card"*, then *"thats the main schedule only"*.
+- **How to add a file.** Drop a file anywhere on the **Shop drawings**, **Job notes** or **Sub orders** card; the card lights up while you drag over it. On a tablet, tap the dashed box on the card to choose a file instead.
+- **A name is needed.** Every upload needs a name from the Home screen, and job notes and orders record it.
+- Each file is saved exactly the way the app that owns it saves it, so every other app shows it straight away.
+- **Shop drawing (PDF):** you choose whether it's **a new drawing** (REV 0, in its own folder) or **a new revision** of an existing drawing (the next REV, in that drawing's folder). Earlier revisions are never touched. The file name is `REV <n> - <date time> - <name>.pdf`, under `Project Saves/Shop Drawings/<item>/`, in the same format Site Measure used. A shop drawing doesn't change the item's status.
+- **Job note (PDF; several can be dropped at once):**
+  - Saved as `<name> - <date time>.pdf` in `Project Saves/Job Notes/<item>/`.
+  - The item gets its job note flag, and the schedule's "Open job note" button appears.
+  - The item moves forward to **In manufacture**, the same rule as a job note added anywhere else (forward only: an item further along isn't moved back).
+  - The status and the Delay pill in both schedule tables update straight away.
+- **Order (any file: PDF, photo, email):** the Attach order dialog asks for:
+  - **Type**, which is required. It lists the four base types, Sub Orders' own custom types, and "+ Add new type…", which doesn't create duplicates.
+  - **Required by**, which is required.
+  - **Supplier** (saved names are suggested, and a new one is remembered), **PO number** and **notes**.
+
+  It's attached to the item the same way the Sub Orders app does it:
+  - The file goes into `UTZLINE Sub Orders/Files/`.
+  - The order is added to the item's `Orders/` file, with who attached it.
+  - The Ordered column updates straight away.
+  - If the Orders file can't be read (still syncing), nothing is written and the dialog says so.
+- **Where you drop matters.** A file dropped anywhere else on the page is caught with a hint, so the browser never opens it in place of the app. The device Back button closes the dialog first.
+- New test: `pdftest-scheduler/run_item_page_uploads.js`.
+
+**Rework register: delivery pin + photo, and a shorter PDF.**
+- The shared rework code has been updated now that Install ITP (v43) and Delivery ITP (v22) record their changes as files too. Delivered to site now comes from Delivery ITP's file, with its pin and location photo. A retaken pin shows in the log as "Delivery pin + photo retaken", and the newest photo is the one used.
+- The location photo appears on the rework page and in the rework PDF.
+- Andrew: *"rework pdf photo size is good right now, but only overflow to page 2,3,etc if they dont fit on page 1"*. The photos (same size) now start straight under the status log and only run on to the next pages when they don't fit.
+- Tests: `run_rework_register.js` updated (the 5-photo rework is now 2 pages). `pdftest-projects/run_rework_cross_app.js` is new.
+
+**v30 (2026-09-28) — Rework register.** Andrew: *"scheduler needs a rework register view also, this would have all reworks, look at it like the schedule but for reworks where we can open it, show the reworks all or by project, you can then click on the rework to open it, print it, share it, on the rework schedule we also need to be able to mark it as complete ready to deliver. this should be visible on the machining schedule also. with a cut button for when cut"*, *"rework pdfs should be user datetime stamped. they should also show the entire status log per rework and have larger photos, each rework becomes its own pdf with larger photos (1/4) a4 per photo, 4 per page"* and *"reworks that are delivered to be green border / text and sent to bottom of page (maybe a separate selectable delivered folder)"*. Then, when only the Viewer part had shipped: *"what happened to doing the rework logs in the schedules"*.
+
+- **Rework register:** open it from Home (**Open Rework Register**), or from a project's schedule (**Reworks**, pre-filtered to that project).
+  - It's a table like the schedule: Project, Level, Room, Joinery ID, Cabinet, **State**, the actions, Rework text, Photos, Logged (date and name) and **Latest** (the newest line of the rework's log). Click a heading to sort.
+  - Filters: all projects or one, state (all outstanding / Logged / Cut / Ready to deliver), and search.
+  - Delivered or closed-out reworks sit in a separate **Delivered (N)** section at the bottom, tap to open, with a green border and text.
+  - Files that are mid-sync are counted ("1 file couldn't be read (still syncing?)"), never shown as empty.
+- **Mark ready to deliver** (on the row) or **Complete — ready to deliver** (on the rework page) needs a signed-in name. **Undo ready to deliver** needs that person's PIN.
+- **The rework page** (tap a row or Open) shows project, level, room, code, cabinet, who logged it and when, the state, the description and the photos (tap to enlarge; the phone's Back button closes it first).
+  - **Add a comment** has a "Sent to saw" quick pick.
+  - The **Status log** shows everything, newest first, with who, when and which app: logged, every state change including undos, delivered, closed out, and every comment (including the Viewer's).
+- **Print / Share** make one PDF for this rework, named by who made it and when, e.g. `Level 1 - Kitchen - K.01 - Cab 2 - Andrew - 2026-09-28 09-36-13.pdf`, and save a copy beside the item's rework PDFs (flat: `PDF Files/UTZLINE ITP/Install ITP Rework/`; legacy: the item's `itp-install-rework` room folder).
+  - Page 1 has the details (project no., project, builder, level, room, joinery no., cabinet, logged, current state and when/who, delivered, photo count), the description and the **whole status log**, oldest first.
+  - Then the **photos, a quarter of an A4 page each, 4 per page**, each captioned with date, time and name. The delivery-location snapshot is the last photo when there is one.
+  - A PC prints straight away. A tablet opens the PDF in its viewer.
+  - If the browser won't open or share because the tap was too long ago, the page shows **PDF ready — Open / Share** buttons.
+  - The PDF library (`jspdf.umd.min.js`, vendored, precached) loads only when someone prints or shares.
+- **No more rework conflicts from this app.** Every change is a new file named `<name> - <YYYY-MM-DD HH-mm-ss-mmm> - <kind>.json` in the rework's log folder, never a rewrite of Install ITP's shared rework file:
+  - flat projects: `Project Saves/UTZLINE ITP/Install ITP Rework Log/<Level> - <Room> - <Code>/`
+  - legacy projects: `itp-install-rework/<Level>/<Room>/<Code> log/`
+
+  It's the same folder the Viewer's comments already use. Kinds: `state` (manufactured = ready to deliver; machined = Cut, from Machine Schedule; `undo: true` on an undo) and `comment`. The fold also reads `delivered` / `closed` events, ready for when Install ITP and Delivery ITP move to event files.
+- **Joinery Item page:** the Rework card now shows each rework's current state (event files included), delivered ones green and last, **Open rework**, and the item's rework PDFs (per-rework first, then the older all-in-one file).
+- **Tablet (4 GB):** the register never keeps photos in memory, only counts. Photos are read only for the one rework that's open and let go when it closes. The register is read only when you open it.
+- **Shared code:** everything above is one shared block, `UtzRework`, pasted in from `/home/claude/shared/utzline-rework.js` by `shared/sync_rework_module.py`. Machine Schedule v17 has the same block; its action is Cut. Don't edit an app's copy by hand.
+- **Not yet:** Install ITP, Delivery ITP, Projects and the Viewer don't show the Cut / Ready-to-deliver states yet. They pick up the event files when each gets its part of the rework round.
+- **Tests:**
+  - New: `pdftest-scheduler/run_rework_register.js` (39 checks). It covers flat and legacy projects, the unreadable count, Viewer comments, filters, no-name refusal, the event file with the shared file byte-for-byte untouched, a refused second ready, comments, undo with a wrong then right PIN, the PDF (3 pages, 4+1 photos, text checked with pdftotext), share, the legacy log folder, the delivered section's green, no photo pixels in the register, the item page card, device Back, and a deleted-meanwhile refusal.
+  - Updated for the new card: `run_joinery_item_page.js`.
+  - All 26 Scheduler tests pass.
+
+`service-worker.js` cache → `utzline-scheduler-cache-v30` (precaches `jspdf.umd.min.js`).
+
+**v29 (2026-09-27) — whole-schedule backup, all in one folder in the main Projects folder:** Andrew: *"in scheduler, we need to backup the entire schedule also, maybe we need a schedule backups folder directly in the main folder, then branch from that"*, then *"I meant in the main folder. Not the individual projects folder."*
+
+- Everything now goes in `Schedule Backups/<YYYY-MM-DD>/` in the main Projects folder:
+  - **`Overall Schedule - <date>.xlsx`** has every project together: a **Summary** tab (per project: items, delivered, installed, delivery overdue, start overdue, due within 7 days, no delivery date, next scheduled delivery, plus a bold Total row), then **Overall Schedule / Machine Schedule / Solid Surface** with a leading Project column (frozen through Joinery ID).
+  - **`<Project> - Schedules - <date>.xlsx`** is one per project with items, the same three-tab workbook as v28.
+- The newest 7 dated folders are kept, and other folders in there are never touched.
+- Nothing is written inside project folders any more. v28's per-project `Backups/Excel Backups` folders are left exactly as they are.
+- If any project can't be read (mid-sync), its file is skipped and so is the Overall Schedule, so there's never an overall workbook quietly missing a project. The whole run retries on the next open.
+- A same-day re-open finds today's Overall Schedule with one lookup and does nothing. "Back up now" always runs.
+- `Schedule Backups` is left out of the project list here and in every other app (`isReservedRootFolderName`), so it never shows as a fake project and never gets backed up as one.
+- Tests: `pdftest-scheduler/run_excel_backup.js` was rewritten for the new layout, with a new `check_overall_backup.py` (openpyxl) for the overall workbook. The cross-app `pdftest-projects/run_schedule_backups_folder_hidden.js` was added. All 25 Scheduler tests pass.
+
+**v28 (2026-09-27) — Daily Excel backup of the three schedules:** Andrew, over a few messages: *"can the database auto upload an excel file every night of the schedules. as a safety backup"* → *"so we could do a backup every morning on first open that automated?"* → *"could we make it so it only occurs for the first open on pc"* → *"do the excel thing, but the spreadsheet needs to look good. add an excel backup folder within the backups folder, then we can sub folder from there, backup the 3 schedules and keep 7 days worth."*
+
+- **What:** one spreadsheet per project per day, `<Project> - Schedules - <YYYY-MM-DD>.xlsx`, with three tabs — **Schedule** (this app's table: dates, lead time, actual delivery, solid surface completed/delivered, Ordered, status, delay), **Machine Schedule** (carcase / colour board / solid surface cuts with who and when) and **Solid Surface** (the SS schedule for items with solid surface, with Solid Surface Schedule's own delay rule). Styled: title and "backed up <date time> by <name>" line, dark header row with filters, frozen identity columns, banded rows, real Excel dates (d mmm yyyy), tinted delay cells (red overdue/late, amber due soon/start overdue, green on track/on time), landscape, fit to one page wide with the header repeated on every printed page.
+- **Where:** `<Project>/Backups/Excel Backups/<YYYY-MM-DD>/`. A legacy-shaped project (where top-level folders are levels) uses `<Project>/Project Saves/Backups/Excel Backups/<YYYY-MM-DD>/` instead, so the new folder never shows up as a fake level in the other apps. Only the newest **7** dated folders are kept; any other folder you make under Excel Backups is never touched.
+- **When:** automatically on the **first open of the day on a PC**, a few seconds after Home appears, one project at a time. Anything reporting as Android/iPad/iPhone/mobile, or with 4 GB of RAM or less, never runs it and never loads the spreadsheet library (`exceljs.min.js`, ~1 MB, MIT — vendored and precached, only loaded when a backup actually runs). A second PC opening later that day finds today's file and skips it. A **Back up now** button on Home runs it on demand on any device (replacing today's file).
+- **Safe:** read-only against every other app — Machine Schedule's cut events and Solid Surface Schedule's schedule events are folded with the same latest-wins rules those apps use, without running their migrations. A project whose core files can't be read (mid-sync) is skipped — never a half-empty backup — and retried on the next open; projects with no joinery items are skipped and left untouched.
+- **Tests:** new `pdftest-scheduler/run_excel_backup.js` + `check_excel_backup.py` (openpyxl): automatic first-open run; flat vs legacy location; 7-day retention with a user folder left alone; tab names, columns, real dates, header style, frozen panes, filters, print setup; the right data from all three schedules (including a cut reverted to Pending and SS's two-flag delay); skip-and-retry on an unreadable project; no second run the same day; Back up now; an Android tablet never runs it or loads the library. The shared `fake-fs.js` now sets a flag so the automatic run never fires inside unrelated tests. Full suite 25/25. `service-worker.js` cache → `utzline-scheduler-cache-v28`.
+
+**v27 (2026-09-27) — "Mark as received" on the schedule, and a Sub orders card on the Joinery Item page:** Andrew, the same day as v26: *"ok now we need all joinery summary pages to show the associated orders. with the option to mark them as recieved. the main schedule also needs a mark as received button for orders. on the schedule"*
+
+- **The schedule:** every order row in the Ordered column's popup (`showOrderedPop`) now carries its own **Received** checkbox + date input — the exact interaction of UTZLINE Sub Orders' own View Orders list: unticked hides the date; ticking fills in today's date if it's empty, shows it and writes straight away; unticking writes `received: false` / `receivedDate: null`; changing the date while ticked re-writes it. After a successful write the fresh array is applied to that item's rows in **both** the Overall and per-project tables (`applySubOrdersToRows`): `ordered`/`orderedList` updated, just that item's visible Ordered cell rebuilt in place (summary text, including the " (Received)" / "— all received" suffixes), both IndexedDB snapshots re-saved — no table re-render, no folder re-read, no re-sort under the pointer.
+- **Making the popup reachable:** v26's popup was a look-only overlay (`pointer-events: none`, closed on the cell's `mouseleave`), so nothing in it could ever be clicked. It now uses **"hover previews, click/tap pins"**: hovering the cell opens it unpinned; leaving the cell (or the popup) only closes it after a 250 ms grace delay (`ORDERED_POP_CLOSE_DELAY_MS`) that the popup's own `mouseenter` cancels, so the pointer can cross into it; crossing another row's Ordered cell on the way in only schedules a swap to that row after the same delay (entering the popup cancels it, so the row underneath can't hijack it); the gap under the cell shrank from 6px to 2px. Clicking the cell, or any press/focus inside the popup (`pointerdown`/`focusin` — which also covers a native date picker pulling the pointer off the page), **pins** it: a pinned popup ignores `mouseleave` and closes only on a second click of the same cell or a click/tap outside both it and every Ordered cell (the document click handler now treats clicks inside the popup as inside). Touch has no hover: a tap's emulated mouseenter + click lands on "pinned", so tap-to-open-then-interact just works.
+- **Joinery Item page (`screenJoineryItem`):** new **Sub orders** card (between Rework and Delivery location), mirroring UTZLINE Projects' own card: grouped by type — steel, upholstery, timber, aluminium first, then custom types alphabetically, each heading `typeLabel || base label || key`; the four validated base chip colours plus ONE neutral chip for every custom type (never a new hue); an Open button per order resolving `Project Saves/UTZLINE Sub Orders/Files/<storedName>` through this page's existing `docRow`/`openLinkedFileHandle` helper, hidden when that file is missing; and the same Received checkbox + date on every order. Read fresh when the page opens (`readSubOrdersWithFilesForItem`), empty state "No sub orders attached to this item."
+- **One shared control, one shared write:** `buildOrderReceivedControl` (both places) → `setSubOrderReceived`, the first time this app writes into another app's data, scoped to exactly `received`/`receivedDate` inside an existing `Orders/<Level> - <Room> - <JoineryId>.json`. It re-reads that file fresh (`readTextFileStrict` — the "unreadable is not empty" rule: NotFound vs. retry-once-then-"couldn't read (still syncing?) — nothing was changed"), finds the entry by `id`, replaces it with a **shallow copy** (`Object.assign({}, o, { received, receivedDate })` — never a field allowlist, the bug class that dropped `typeLabel` in Sub Orders' own `setOrderReceived` before its v5 fix), and writes the whole array back in Sub Orders' own `JSON.stringify(arr, null, 2)` shape. `create: false` on every lookup: if the Orders file or the entry is gone (unattached meanwhile) it says so and writes nothing; Sub Orders' `Inbox/` and `Files/` are never written (Files/ is only looked up, for the card's Open buttons).
+- **No new I/O on hover/render:** the popup renders from the row's in-memory `orderedList` (read once in `buildEnrichedRows`, unchanged from v26); Sub Orders I/O happens only on an explicit tick/date change, or when the Joinery Item page itself opens.
+- **Fix, found while wiring the write:** `subOrdersFileNameFor` used this app's shared `sanitizeFileBase`, whose empty-name fallback is `"plan"`, while Sub Orders' own `orderFileNameFor` falls back to `"file"` — so an item with a blank room never found its orders (v26's Ordered cell read blank for it). Now uses Sub Orders' own fallback (`subOrdersNamePart`).
+- Comments that said this app "never writes" Sub Orders' file (top-of-file DATA IT READS/OWNS, the ORDERED COLUMN block, the Sub Orders section header, the table-header and popup HTML comments) were updated to describe the one scoped exception.
+- New `run_mark_received.js` (`pdftest-scheduler`): real-mouse hover → move into the popup (crossing the next row's cell) → it stays open and on the same row; tick writes through to the real Orders file with every other field preserved (`typeLabel`, an unknown future field), popup meta + the Ordered cell update in both tables (incl. "— all received" after ticking a custom-type order) and both snapshots; date edit; untick clears both fields; clicking the date doesn't toggle the checkbox; pinned popup survives the pointer leaving, outside click closes it, hover-then-leave still closes after the delay; Joinery Item card grouping/order, custom labels + the neutral chip, Open only where the file exists, card tick/untick writes through and updates the table; empty state; deleted-file / unattached-entry / mid-sync-file all fail with a message and write nothing; touch tap-open/tap-tick/tap-outside; Sub Orders' `Inbox/` and `Files/` byte-for-byte unchanged and no Orders file ever created; blank-room file naming. `run_ordered_column.js`'s v26 "read-only proof" became "merely viewing/hovering writes nothing" — now a byte-for-byte check of Sub Orders' whole folder after real hovers, a click-pin and sorting. Full suite re-run clean (24/24).
+
+`service-worker.js` cache → `utzline-scheduler-cache-v27`.
+
+**v26 (2026-09-27) — read-only "Ordered" column, cross-referencing UTZLINE Sub Orders:** Andrew, right after the standalone **UTZLINE Sub Orders** app shipped its own v1-v4 the same day: *"add ordered (with a description) summary to the main schedule."*
+
+- Both the Overall Schedule and per-project Schedule tables get a new **Ordered** column, placed alongside the existing Completed/Delivered (Solid Surface) columns — same read-only, cross-app precedent: this app never writes Sub Orders' file, only summarizes it (`readSubOrdersForItem`, reading `Project Saves/UTZLINE Sub Orders/Orders/<Level> - <Room> - <JoineryId>.json`).
+- **"Summary" with a description:** one attached order shows its type + supplier (`"Steel — Acme Steel"`); more than one shows a count plus the distinct types involved (`"2 orders (Steel, Timber)"`), so the cell always reads as more than a bare count or a status dot. A custom order type (Sub Orders v4+) shows its own real name via the `typeLabel` snapshot, same as UTZLINE Projects' own Sub orders card.
+- Hovering/tapping a cell that has at least one order opens a popup with the full per-order breakdown (type, supplier, required-by date, received status) — the exact same interaction pattern as the Status column's own history popup, sharing its CSS box (`showOrderedPop`, a structural sibling of `showStatusHistoryPop`).
+- Blank "—" for an item that's never been ordered, same as every other unset cell in this table. Sortable like every other column (falls through to the existing generic string-sort case).
+- New `run_ordered_column.js` (`pdftest-scheduler`) covers: the summary text for zero/one/many orders (including a custom type via its `typeLabel`), the popup's full breakdown, sort-by-Ordered, and that this app's own read never writes to Sub Orders' file. Full pre-existing regression suite re-run clean.
+
+`service-worker.js` cache → `utzline-scheduler-cache-v26`.
+
+**v25 (2026-09-27):** Read-only "Company logo" preview (NEXT_RUN_NOTES.md item 8's family-wide scope). Andrew, verbatim: "change company logo should only be visable in the projects app, in every other app it should load the one chosen in projects." This app never showed a company logo anywhere before now — a new "Company logo" card was added to the Home screen (`#screenHome`), right below the identity row and above the "Projects" list: a 56×56 preview box (or a "No logo" placeholder), read-only, no upload/remove controls. Sourced from the exact same shared `company-logo.png` file UTZLINE Projects owns at the Projects root (`projectsRootHandle`) — `readCompanyLogoReadOnly()` decodes the raw file bytes into an object URL (no downscaling; this app has no PDF export of a logo to feed). Refreshed from `populateHome()` alongside the existing `populateIdentitySelector()` call, best-effort with no error if the file simply isn't there yet. New `run_company_logo_readonly.js` (no upload/remove UI anywhere in the DOM; the preview shows/hides correctly with/without `company-logo.png` at the root, no error either way), using a new minimal `setFakeCompanyLogoForTest()`/`companyLogoPreviewHTML()` pair on the app's existing `window.__testHooks`. Full pre-existing regression suite re-run clean (22 files).
+
+`service-worker.js` cache → `utzline-scheduler-cache-v25`.
+
+**v24 (2026-09-27):** Sticky bottom horizontal scroll bar (general note across the family, not scoped to this app). Andrew, verbatim: *"can we make the horizontal scroll bars in the schedule always appear, we cant scroll all the way to the bottom of the page to find them."* `.table-scroll`'s own native horizontal scrollbar sits at the bottom of that (potentially very tall) box — effectively the bottom of the whole page for a schedule with hundreds of rows.
+
+- A new `#stickyHScrollBar`, pinned to the bottom of the browser viewport (not the page) via `position: fixed`, mirrors whichever `.table-scroll` is the active screen's own overflowing table — `findActiveTableScroll()` picks it (the visible, non-`[hidden]` `.screen`'s own `.table-scroll` whose `scrollWidth > clientWidth`), `refreshStickyHScroll()` shows/hides the bar and sizes its inner spacer to match. Synced BOTH ways with the real table (dragging either scrollbar, or panning the table directly on a touch device, moves the other), via a `stickyHScrollSyncing` guard to avoid feedback loops.
+- Wired into every place the active table or its width can change: the end of `renderOverallTable()`/`renderProjTable()` (right after `applyStickyColumnOffsets`), `showScreen()`, `openPlanCanvasForLevel()` (the plan canvas overlay fully covers the schedule table underneath — `findActiveTableScroll()` returns null while it's open), and the existing debounced window resize handler.
+- `z-index: 20` — below the plan-canvas overlay (30) and modal backdrops (40), so it's never visible on top of either; it just sits behind them, correctly hidden without needing its own explicit check in most cases.
+- New `run_sticky_hscroll_bar.js` (in `pdftest-scheduler`): a narrow 480px viewport forces the wide `sched-table` to overflow on both the Overall Schedule and a project's own schedule; confirms the bar shows/hides with the right table, bidirectional scroll sync, hides on Home, and hides/reshows correctly across a resize past/back under the table's natural width. Full suite re-run — **21/21** pass. Identical fix also shipped to Machine Schedule and Solid Surface Schedule, each its own version bump per the standing per-app process note.
+
+**v23 (2026-09-26, same day):** `NEXT_RUN_NOTES.md` item 13 — "unachievable manufacture start date" validation on the Set Schedule dialog. Spec confirmed by Andrew: *"red when typing, popup on save."*
+
+- **Red text while typing.** `updateComputedStartPreview` now toggles a new `.past-due` class on `#schedComputedStart` (plain string comparison against `todayDateStr()`, since both are `"YYYY-MM-DD"`) any time the live computed manufacture start date preview is already in the past — a light-touch, non-blocking warning while the delivery date/lead time are still being typed.
+- **Blocking popup on Save.** A new, purpose-built OK-only popup (`#unachievableStartBackdrop`) — this app had no generic alert()-style modal to reuse, so it's built the same way as the existing name-prompt modal, per family convention — now stops Save outright (not just the pre-existing inline `scheduleModalError` text, which never actually prevented the write) when the computed start date is still in the past at Save time, recomputed fresh rather than trusting the live preview (since "today" can roll over while the dialog sits open). The popup names the actual computed date and tells the user to change the required delivery date or shorten the manufacture lead time; OK just closes the popup, leaving the Set Schedule dialog open underneath so the values can be fixed. Wired into the existing device-Back-button overlay-closing list (`closeAnyOpenOverlay`), ahead of the Set Schedule dialog itself since it can be stacked on top of it.
+- New regression test `run_v22_unachievable_start_validation.js` (in `pdftest-scheduler`) covers: the red-text toggle both ways (past vs. comfortably future computed start), Save being blocked with nothing written to disk when the computed start is in the past, OK closing just the popup, and a normal Save succeeding once the dates are fixed.
+- Also fixed, found in passing: `run_date_weekday_format_and_weekend_shift.js` (pre-existing test, in `pdftest-scheduler`) hardcoded fixed August/December 2026 calendar dates as "the future" — once this validation shipped, real time had already passed those dates, so its own Saturday/Sunday weekend-shift Save legitimately started tripping the new block (the right behavior, the wrong test). Rewritten to compute its dates relative to `todayDateStr()` (200 days out) instead of hardcoding them, with the expected weekday-format/weekend-shift values computed independently in Node (not by calling the app's own functions), so it can't go stale like this again and still verifies that math independently. Full Scheduler suite re-run — **20/20** pass.
+- Does not touch source.html, any ITP app, UTZLINE Machine Schedule, or UTZLINE Solid Surface Schedule — this validation is Scheduler-only, per Andrew's own scoping of item 13 to this app. `service-worker.js` cache bumped to `utzline-scheduler-cache-v23`.
+
+**v22 (2026-09-26, same day):** Family-wide status icon revert (`NEXT_RUN_NOTES.md` item 2) — same-day follow-up to v21, shipped as its own version since v21 had already been zipped and delivered before this fix landed. Andrew's earlier icon-sweep round (v20) changed `in_manufacture`: 🏭→🔨 and `machined`: ⚙️→🪚; this reverts both back to the original icons (`in_manufacture`: 🏭, `machined`: ⚙️) across the family. `joineryStatusIcon`'s own in-code comment restored to its original wording (`⚙️->🪚`, `🏭->🔨` describing the v20 sweep) plus a new line noting this v22 revert; grepped for every literal 🔨/🪚 occurrence — clean. `run_v20_solid_surface_and_delay.js` (in `pdftest-scheduler`) updated to match: its two icon assertions now expect 🏭/⚙️ instead of 🔨/🪚, with a note that it's superseded by this revert. Full Scheduler suite re-run — **19/19** pass. `service-worker.js` cache bumped to `utzline-scheduler-cache-v22`. Does not touch source.html, any ITP app, UTZLINE Machine Schedule, or UTZLINE Solid Surface Schedule — each ships this same revert on its own next update, per the standing per-app process note.
+
+**v21 (2026-09-26, same day):** Andrew, verbatim: *"now update the schedules,"* — read (per the standing per-app process note in `NEXT_RUN_NOTES.md`) as "build this app's own queued Scheduler-family items now" — this app's own portion of items 4/5/6 (item 3, the Required delivery date column, is Machine-Schedule-only — this app already has its own "Scheduled delivery" column).
+
+- **"View on plan" now zooms to the item (item 4).** Andrew, verbatim: *"view on plan needs to zoom into the item on the plan, all schedulers just loads the pull [full] plan page"* — `openPlanCanvasForLevel` gained an optional fifth `centerOnMarker` parameter, ported near-verbatim from UTZLINE Projects' own `openPlanCanvasForLevel(centerOnMarker)` (confirmed by Andrew as "the perfect zoom level," `NEXT_RUN_NOTES.md` item 7): after the existing `planFitToView()`, it looks up the target item's own roomlink marker (`{room, joineryId}`) or a raw `{x, y}` point, then `planView.scale = Math.max(planView.scale, 1)` centred on it. Wired on both call sites tied to one specific item — each table row's own "View on plan" button, and the Joinery item page's own "View on plan" button — passing that row's `{room, joineryId}` through. The general level-picker "Open plan" button is unchanged (no single item in view, so it still just fits the whole level).
+- **Frozen columns are now viewport-width-based (items 5/6).** This app's own v20 sticky-column treatment (`applyStickyColumnOffsets`, real JS-measured column widths — a more robust design than a fixed-pixel guess) kept working, but shared the same root-cause layout bug Machine Schedule's report exposed: `.screen` is a flex item of `main` (`display:flex; justify-content:center`) with no `min-width` override, so its automatic minimum width let `.sched-table`'s forced min-width propagate all the way up through `.card`, growing `.screen` (and the whole page) wider than the viewport instead of `.table-scroll` ever genuinely overflowing on its own — the same "no way to scroll across on Windows" failure mode. Fixed the same way: `.screen{ min-width: 0; }`. Same-day follow-up (item 6, Andrew: *"can we remove the freeze on android as you cant use the schedule now"* → *"it will be an issue on any smaller screen (small laptop, tablet, phone)"*): the sticky-column CSS (`.sticky-col`/`.sticky-col-edge`) is now scoped inside `@media (min-width: 900px)` — a viewport-width breakpoint, never an OS/UA check. `applyStickyColumnOffsets` itself keeps running at any width (harmless — it just writes `left` offsets that do nothing once `position` isn't `sticky`); below 900px every column scrolls together in one plain, fully-scrollable table.
+- New regression test `run_v21_zoom_and_frozen_breakpoint.js` (in `pdftest-scheduler`) covers: the marker-jump zoom (scale >= 1, the target marker lands at the plan viewport's own center), and the frozen-column breakpoint at 1000px (sticky, `.table-scroll` itself overflows and scrolls, `main` does not) vs. 700px (`position:static`, sticky fully off). Full Scheduler suite **19/19** (18 existing + this one), all still passing.
+- Does not touch source.html, any ITP app, UTZLINE Machine Schedule, UTZLINE Solid Surface Schedule, or UTZLINE Projects — each app's own portion of this round ships on its own next update, per the standing per-app process note.
+- `service-worker.js` cache bumped to `utzline-scheduler-cache-v21`.
+
+**v20 (2026-09-26):** Shared cross-app schema round (built in parallel with the sibling UTZLINE Solid Surface Schedule app, which owns/writes the new data below — this app is READ-ONLY against it, built directly against the shared schema, not against that app's own eventual report).
+
+- **Column reorder:** the schedule-date block now reads Manufacture start → Lead time → Scheduled delivery → Actual delivery (was Scheduled delivery → Actual delivery → Manufacture start → Lead time) on both the Overall Schedule and per-project Schedule tables. Labels unchanged.
+- **New read-only Solid Surface Completion columns** ("Completed"/"Delivered", positioned right after the reordered schedule-date block, before Status/Delay): Solid Surface Schedule's own new per-item, PIN-locked-after-first-set "Completed"/"Delivered" flags (independent of each other and of the shared `joinery-status.json` pipeline — nothing here touches the existing "Actual delivery" column). `readSolidSurfaceCompletionRecordForItem(projectHandle, level, room, joineryId)` (strict per-item read, mirroring this app's own `readScheduleRecordForItem`) + `foldSolidSurfaceCompletion(events)` (ported byte-for-byte from the shared schema, mirroring Machine Schedule's `foldMachiningFlags`) added under a new "Solid Surface Completion (v20, READ-ONLY)" section. Blank ("—") for every non-Solid-Surface item and any Solid Surface item that hasn't hit these flags yet — this app doesn't scope by `hasSolidSurface`, only the columns' content. No button, no write path, ever, anywhere in this app.
+- **New "Delivery due soon" delay pill** (blue, key `upcoming`): fires when an item isn't overdue and its required delivery date is within the next 7 days inclusive. Confirmed side-by-side with the existing amber "Manufacture start overdue" pill — the only two-pill combination possible; every other state stays single/exclusive. `computeDelayInfo` now returns a small `pills` array (1-2 entries) alongside the existing single `key`/`label`/`severity` fields (kept for every pre-existing call site); every render call site (both tables' Delay cell, the Joinery Item page's own meta-grid) updated to render 1-2 pills, and the delay filter dropdown now matches a row on *either* pill it holds, not just its most-severe one.
+- **Status icon swap** (family-wide, cosmetic): "In manufacture" 🏭→🔨, "Machined" ⚙️→🪚. No other icon changed.
+- **Frozen (sticky) identifying columns + a horizontal scroll bar:** both tables' identifying columns (Project [Overall only]/Level/Room/Joinery ID/Description/Work order #) now stay pinned via `position:sticky` with a real measured cumulative offset (`applyStickyColumnOffsets`, re-run after every render and on resize — column widths vary with real content, so a guessed fixed pixel offset would drift) while the schedule-date block onward scrolls under them, inside the same `.table-scroll` wrapper this app already had (it already gave the horizontal scroll bar itself; this just adds the sticky positioning).
+- **Plan-canvas marker behaviour REVERSED:** a plain tap/press on a marker now shows a read-only status/schedule summary again (reviving the original "accidental-tap safety" intent from before Andrew's 2026-09-23 "mouse click on plan to change the dates" request, which this round explicitly overrides back) instead of opening the Set Schedule dialog directly; a long-press (and real right-click) now opens a 3-button popup instead — "Edit delivery date" (the same dialog, one tap further in), "Open job note" (gated on the item having one), "Open item". Marker dot colour is no longer the saved room-type colour — it's now delay-status-driven (red for Delivery overdue *or* Manufacture start overdue, blue for Delivery due soon, green for On track/Delivered on time/early, grey for No schedule set), computed once per plan open (mirroring the existing `planItemsP` warm-cache pattern) rather than re-folded per marker per render.
+
+New regression tests: `run_v20_solid_surface_and_delay.js` (column reorder, the new SS Completion columns populated/blank, the new pill + the one side-by-side case + its filter-matching, the 7-day boundary, the frozen-column markup/offsets, the icon swap) and `run_v20_plan_marker_popup_and_colors.js` (tap → summary not dialog; long-press/right-click → popup; all 3 popup buttons; job-note gating; marker colours for all 4 delay states). Three existing tests updated for the reordered/expanded columns (`run_status_history_and_actual_delivery.js`, `run_post_delivery_delay_outcome.js`, `run_schedule_crud_and_delay.js`) and three more for the reversed tap/long-press behaviour (`run_overall_and_plan_view.js`, `run_plan_zoom_and_reset.js`, `run_legacy_plan_fallback.js`). `service-worker.js` cache bumped to `utzline-scheduler-cache-v20`.
+
+**v19 (2026-09-25):** Family-wide scheduling sweep — Andrew, verbatim: *"ok, now a full sweep of all the scheduling software"*, said straight after the Site Measure v46 and Install ITP v35 rounds. Same four family fixes applied here where they apply, the same classes of bug audited, the tablet made faster, and ordinary bugs found along the way fixed. Nothing about any file format or filename another app reads or writes changes.
+
+*Family fixes.* (1) **IndexedDB connection leak** — `idbOpen`/`identityDbOpen` opened a new connection per call and never closed it (the cause of "slows down after a little use" across the family); now one memoised connection per database, reopened only after the browser closes it (`versionchange`/`close`). (2) **Device / phone Back button walks back through the app** — same design as Install ITP v35: setup / reconnect / Home `replaceState` (Back from there leaves the app as before), Overall Schedule / project schedule / Joinery Item page / the plan canvas `pushState`; a popstate first closes whatever is open (Set Schedule, Job notes, name prompt, numberpad, "Show me in", the status-history popover — each through its own Cancel/Close control), otherwise steps back exactly one screen through the app's existing navigation; a step that doesn't change the screen puts the entry back so the next press asks again. (3) **"Unreadable is not empty"** — every read audited; three were the base of a read-modify-write and collapsed any failure to `[]`: `readUsersCsv` (so "Add a new name" on a `utzline-users.csv` that was mid-Dropbox-sync would have rewritten the registry with only the new name — everyone else's row gone), and both legacy migrations, `migrateLegacyJoineryStatusIfNeeded` and `migrateLegacyJoineryScheduleIfNeeded`, which created the events folder *first* and only then read the legacy file — a legacy file mid-sync became an *empty* events folder that every app in the family then trusts forever (the legacy file never read again by anyone, its whole history invisible). All three now distinguish NotFoundError (genuinely absent → fresh is fine) from any other failure (→ one retry after 600 ms → reject with `code:"read_failed"`, surface it, write nothing): the add-name flow says "nothing was changed", a PIN check that couldn't read the file says so rather than "Incorrect PIN", and the migrations read the legacy file strictly *before* creating anything. Also strict: `readJoineryItems` (a table now says "couldn't read" instead of "No joinery items in this project yet."), the level-file readers (the plan says "couldn't read, try again" instead of "No saved plan found"), and a new per-item `readScheduleRecordForItem` for the Set Schedule dialog's prefill — a soft read there could silently prefill the *previous* record when the newest event file was mid-sync, and a Save would write it back on top. `writeJoineryScheduleEvent` runs the (memoised) migration check first, so a plain Save can never bring the events folder into existence over an unmigrated legacy file. Pure-display folds (the tables' status/schedule events) deliberately stay soft, and say so in a comment. (4) **Speed / "icon caching like we just did"** — the rule proven on Andrew's tablet: on Android + Dropbox every File System Access call costs hundreds of ms and a named lookup scans its folder. Measured against a seeded 40-item project with a call counter: opening a project schedule **471 → 216** calls on first open and **470 → 90** on every later open (622 KB → 4 KB read); opening the Set Schedule dialog **205 → 3**; a Save **474 → 2**. How: directory handles memoised per project for the session (`getCachedDir`/`projectDir`, ported from Install ITP); per-item event folders read from the handles the listing already returns instead of a named lookup each; an immutable-event fold cache (event files are never rewritten, so an item's fold is remembered against the exact set of filenames in its folder and only re-read when a new file appears); Site Measure v46's `listFlatLevelNames` stat cache (level files — each carrying a multi-MB base64 plan — are stat'ed in parallel and only re-parsed when size/lastModified changed, instead of every one being read in full, sequentially, just for its `name`); the dialog prefills from the item's own folder instead of folding the whole project; a Save/Clear updates the row in place (the event just written *is* what a re-read would fold out) instead of re-reading the project — or, from the Overall Schedule's plan, *every* project; `joinery-items.json` read once per plan open instead of on every marker tap; projects read in parallel on the Overall Schedule instead of a sequential `reduce`; the plan's pan/pinch transform write coalesced to one per animation frame; the search boxes re-render on a 100 ms debounce instead of every keystroke. And **instant paint**: Home, the Overall Schedule and each project schedule now paint their last-known state from a device-local IndexedDB snapshot the moment they open (rows stored without their directory handle, which is re-resolved lazily on the first row action; the Delay pill recomputed against *today* on paint so a stale snapshot never shows yesterday's "On track"), show a "Showing last-known schedule — refreshing from the folder…" note, read the folder behind it and repaint. A project that can't be read keeps its last-known rows and is *named* in a toast rather than silently vanishing from the Overall table. Snapshots are keyed under the Projects-root name so a different root never paints another root's data. (5) **Android UI robustness** — `user-select:none` + `-webkit-touch-callout:none` on the plan screen and a document-level `contextmenu` swallow while it's open (a long press never selects the title or pops the image sheet); `touch-action: manipulation` on buttons, list rows, headers and inputs (no double-tap-zoom wait); `touch-action: pan-x pan-y` on the table scrollers so a wide table pans with a finger without fighting the row buttons. Andrew's standing rule ("only show view shop drawing or view job notes button if there is one applied") was already met — the row's "Open job note" button is gated on the status record's `jobNote` flag, and this app has no per-row shop-drawing button (the item page's Shop drawings *card* shows an empty state, same as UTZLINE Projects' own page). No Timings/debug UI exists here.
+
+*Filter tick boxes (2026-09-26 addendum, same v19 build).* Andrew, mid-sweep, verbatim: *"add in tick boxes for filtering out installed and delivered items. Also machining filter out machined with a tickbox"* (the machined one belongs to UTZLINE Machine Schedule, not here). Both tables — the Overall Schedule and the per-project Schedule — now have **"Hide delivered"** and **"Hide installed"** tick boxes in their filters bar. Ticked = rows whose *current folded status* is exactly that stage are left out (installed outranks delivered in the pipeline, so each box hides only its own stage; both ticked hides both). Default unticked; each box is remembered per device in `localStorage` (one key per app + table + box: `utzline-scheduler:overall:hideDelivered`, `…:overall:hideInstalled`, `…:project:hideDelivered`, `…:project:hideInstalled`), so the choice sticks between visits and reloads — best-effort, a blocked or cleared storage simply reads as unticked. Filtering is purely in memory on the rows already loaded (never a re-read from the folder; the test counts folder calls to prove it), the search box and the other dropdowns still apply on top, and a new "Showing N of M items" line under the filters follows what's actually visible (plain "M items" when nothing is filtered out). New regression test `run_hide_status_tickboxes.js`: tick → the right rows gone and the count updated (each stage independently, then both); search on top; untick → back; a re-render (sort click) keeps them hidden; after a full page reload the boxes are still ticked and both tables load with those rows already hidden.
+
+*Ordinary bugs found and fixed.* **`hidden` did nothing on two controls:** the browser's default `[hidden]{display:none}` is outranked by any author display rule, so `schedClearBtn.hidden = true` on a `.btn{display:inline-flex}` and `levelPlanRow.hidden = true` on a `.row{display:flex}` never hid anything — the "Clear schedule" button showed for items with no schedule, and the "Open a level's plan" row (with an empty select) showed for projects with no plan; confirmed in headless Chromium (computed display stayed `flex`), fixed with one `[hidden]{display:none !important}` rule, and Cancel/Save given `margin-left:auto` so they stay right-aligned now that Clear really disappears. **Stale rows after navigation:** opening a project left the *previous* project's rows and plan levels on screen until the new reads finished — on a slow tablet you could tap a row belonging to the project you'd just left; the table is now cleared (or painted from this project's own snapshot) at once, and a superseded load (Refresh pressed again, or a different project opened before the last read finished) is dropped rather than repainting over the newer one. **Unhandled rejections:** the Reconnect button's `requestPermission`, a marker tap whose `joinery-items.json` read failed, and a row action whose folder lookup failed all rejected silently — each now reports. **Popover left behind:** re-sorting/filtering a table while the status-history popover was open rebuilt the cell it was anchored to and left it floating; it's now hidden on every render. **Text that lied:** the setup screen still claimed the app's "only write is its own new schedule file, one per project" — it has written per-item event files and the shared name+PIN registry since v5/v15. **Missing Refresh:** the project schedule had no Refresh button (the Overall Schedule did); added, since the instant-paint design makes "re-read now" a real need. Save/Clear buttons are disabled while their write is in flight so a double tap can't file two events.
+
+*Deliberately left alone.* The migrations' per-event *write* failures are still swallowed individually (a partially-migrated events folder would then be trusted) — that's the family-wide migration contract ported byte-for-byte from `source.html`, and changing it belongs to a shared decision, not this app's sweep; reported instead. Hover-to-open on the status-history popover stays alongside tap-to-toggle (the popover is not hover-*dependent*). `detectFolderShape` still probes up to three names per project folder when a root is first picked (once per folder choice, not per screen). The tables' history growth on click-driven Back (every screen change pushes) matches the reference apps exactly.
+
+Four new regression tests in `pdftest-scheduler/`: `run_sweep_back_button.js` (the history walk through every screen and the dialog/popover-closes-first rule, using Playwright's real `goBack()`), `run_sweep_idb_single_connection.js` (`indexedDB.open` wrapped and counted across a whole session of screens, saves and refreshes — exactly one open per database), `run_sweep_unreadable_not_empty.js` (the registry add/PIN paths, both legacy migrations and the strict dialog prefill, each against a real fake-fs file that exists but can't be read, then reads again) and `run_sweep_instant_paint_cache.js` (snapshots saved from live reads; a Save updating the row in place with only its own 2 folder calls; the two `hidden` bugs; then a reload with every project-level read made to hang — Home, Overall and the project schedule all still paint their last-known rows with the refreshing note). One existing test, `run_overall_and_plan_view.js`, needed its two search-box waits widened from 100 ms to 300 ms for the new debounce — a timing change, not a behaviour change. Full suite 16/16 (11 existing + 4 sweep tests + the tick-box test). `service-worker.js` cache bumped to `utzline-scheduler-cache-v19`. Does not touch source.html, Install ITP, Manufacture ITP, Delivery ITP, Machine Schedule, Solid Surface Schedule, or UTZLINE Projects in any way.
+
+**v18 (2026-09-24):** New "Open item" Joinery Item detail page — Round 3 of the Joinery Item page overhaul, Andrew, verbatim: *"in both scheduler and machine sheduler, all this information needs to be accessible also. (mimic the joinery status page above)."* A full, read-only port of UTZLINE Projects' own Joinery Item page: every row on both the Overall Schedule and per-project Schedule tables now has an "Open item" button (leading the row-actions cell, additive alongside the existing "Open job note" button — not a replacement for it), opening a new detail screen with a meta-grid (Level/Room/Description/Work order #/Status/Scheduled delivery/Actual delivery/Manufacture start/Delay, all reused directly from the row's own already-computed fields — no re-fetch of status or schedule, since this page is only ever opened FROM a table row that already has everything) and read-only cards for Site Measure overlays (the latest saved overlay's flattened preview image), Shop drawings, Job notes (reusing this app's own existing job-note reader), ITPs (Manufacture/Install/Delivery, each with its progress summary and any exported PDFs), Rework (Install ITP's rework log — its always-current cumulative PDF, plus each entry with its pending/received status; no inline photos, they live in the PDF), and Delivery location (Delivery ITP's own pin, shown as a static snapshot thumbnail only — no click-to-jump-to-pin interactivity, since this app's plan viewer has no exact-point-centering mode to reuse for it; the page's own "View on plan" button already gets you to the right level).
+
+Deliberately dropped from UTZLINE Projects' own version, since this app never writes joinery-item data at all: "Edit item", "Edit history", and the Rework Register's click-to-scroll-to-entry highlight (there's no Rework Register here to click a rework FROM). Ported the family's generic directory-walk helpers (`listFilesInDir`, `everySubdir`, `docRow`, `openLinkedFileHandle`) and every reader function verbatim from UTZLINE Projects (`listShopDrawingsForItem`, the Site Measure overlay readers, the ITP checklist/PDF readers, `readInstallReworkForItem`/`readReworkPdfForItem`, `readDeliveryLocationForItem`) — none needed any changes, since they only ever take a plain projectHandle + {level,room,joineryId} shape, which this app's own `row` objects already satisfy directly. Reused this app's own pre-existing `joineryItemPageKey`/`listJobNotes` rather than duplicating them under Projects' own differently-named equivalents.
+
+New regression test `run_joinery_item_page.js` seeds one item with every linked-data type (shop drawing with two revisions, job note, Site Measure overlay with a snapshot, all three ITPs at different stages, two rework entries — one pending, one received — plus its cumulative PDF, and a Delivery ITP location pin + snapshot) and one item with none of it, and confirms: the "Open item" button appears on every row; the full-data item's meta-grid, every card, and the correct empty states on the bare item all render correctly with zero page errors; the Back button returns to the Project Schedule screen it was opened from (not Home); and "View on plan" from the item page opens the correct level's plan canvas and returns to the table, not the item page, when backed out of. Full Scheduler suite re-run clean (11/11, zero regressions). `service-worker.js` cache bumped to `utzline-scheduler-cache-v18`. Does not touch source.html, Install ITP, Manufacture ITP, Delivery ITP, or UTZLINE Projects in any way.
+
+**v17 (2026-09-24):** Job note thumbnail — reverted. Andrew's verdict after trying v16's pilot: *"thumbnails were a fail, revert back to the button."* The "Open job note" button on both the Overall Schedule and per-project Schedule tables is back to plain "Open job note" text, exactly as it was through v15 — no thumbnail, no placeholder, no async render. Removed everything v16 added: the button/wireRowActions changes, `getJobNoteThumbnail`/`renderPdfFirstPageThumbnail`/`pdfThumbLibReady`/`ensurePdfThumbWorker` and their in-memory cache, the thumbnail CSS, the `pdf.min.js` script tag, and the vendored `pdf.min.js`/`pdf.worker.min.js` files themselves — this app carries no pdf.js dependency again, same as every version before v16. The dedicated `run_job_note_thumbnail.js` regression test (and its PDF fixture) is removed along with the feature it tested; `run_job_note_button.js` needed no changes at all, since it only ever asserted on the `.jobnote-btn` class and dialog behaviour, both unchanged by the revert. Full Scheduler suite re-run clean (10/10, back to the pre-pilot count). `service-worker.js` cache bumped to `utzline-scheduler-cache-v17`.
+
+**v16 (2026-09-24):** Job note thumbnail (pilot) — Andrew, verbatim: *"on the open job note button on the schedules, can this be a thumbnail of the front page (1st page) of the job note. maybe try on schedule first."* The "Open job note" button on both the Overall Schedule and per-project Schedule tables now shows an actual small preview of the newest job note's first page, rendered from the real PDF, instead of just plain "Open job note" text — piloted here first, per Andrew's own instruction, before it goes to any other app's own job-note button (Machine Schedule's identical-looking button is completely untouched by this).
+
+This needed a real PDF-rendering library, which this app never carried before (it only ever *reads* job notes, never renders one) — `pdf.js` is vendored locally (`pdf.min.js`/`pdf.worker.min.js`, the same 2.16.105 build Site Measure/Viewer already ship), precached by the service worker like every other asset here, with the worker itself also pointed at the local file rather than a CDN — a small improvement over Site Measure/Viewer's own pattern (they point their worker at a CDN URL even though the library itself is vendored), made possible because this is only an optional preview, not something import needs at page-load time. The button starts as a plain "JN" placeholder and swaps in the rendered image once it's ready; a note that isn't a real, parseable PDF (or if pdf.js somehow failed to load) simply keeps the placeholder rather than showing a blank or broken image — clicking the button still opens the same job-notes list dialog exactly as before either way. Rendered thumbnails are cached in memory per note (by item + filename + size + last-modified) for the rest of the page load, so re-sorting or refreshing a schedule table never re-renders one it already has. Deliberately eager rather than lazy-on-scroll for this first pass, for simplicity — worth revisiting with an IntersectionObserver if a very large Overall Schedule full of job notes ever makes this noticeably slow in the field.
+
+New regression test `run_job_note_thumbnail.js` (in `pdftest-scheduler`) covers: a real valid single-page PDF renders an actual `data:image/jpeg` thumbnail on both the Overall Schedule and per-project Schedule tables; an unparsable "PDF" falls back to the plain placeholder without breaking the button's click-to-open behaviour; an item with no job note shows no button at all; the pdf.js worker resolves to the local file, not a CDN; and repeat lookups of the same note return the identical cached data URL. Full Scheduler suite re-run clean (11/11); `pdftest-projects/run_all.sh` re-confirmed at 91/97, the same 6 pre-existing, unrelated failures as every other round, zero new regressions — including Machine Schedule's own separate job-note test, confirming this pilot didn't touch it. `service-worker.js` cache bumped to `utzline-scheduler-cache-v16`.
+
+**v15 (2026-09-24):** joinery-schedule.json v2 — the third and final round of the same safety-net work started with `joinery-status.json` v2 (v14, above) and continued with `machining-flags.json` v2, applied now to this app's own file, the one it actually writes: `joinery-schedule.json`. Same risk as before — up to 15 people across five apps writing to one shared JSON array file, some syncing in late via Dropbox, one accidental overwrite losing someone else's save — same fix shape, but a different fold rule, because this file's own original write semantics are different from the other two: a schedule's "Save" always writes every field together as one atomic whole (delivery date, lead time, computed start date) — never a partial update the way a single machining cut type is — so there's no per-field merge to get right here. Replaced the single shared `joinery-schedule.json` array, rewritten whole on every Save or Clear, with one small immutable event file per Save/Clear action, filed under `Project Saves/Joinery Schedule/<Level> - <Room> - <Code>/`. Reading an item's current schedule now means folding its event files down to the single latest one by timestamp (whichever machine's clock wrote last wins the whole record, exactly as before — this app never had field-level merging to preserve); a "Clear" event as the latest one means the item currently has no schedule, same as an absent record always meant. Two concurrent Saves for the same item can no longer silently destroy one another — both are kept as separate event files, and whichever has the later timestamp is simply the one that folds out on top, deterministically, on every device, once Dropbox has synced both.
+
+The old shared file is migrated automatically and losslessly (once, idempotently, using each historical record's own `updatedAt` timestamp rather than "now" so a double-migration from two machines syncing in at once is a safe no-op) the first time any app in the family opens a project after this update, and left in place afterward, byte-for-byte untouched — nothing deletes or rewrites it. `writeJoineryScheduleEvent` replaces the old read-modify-write `writeJoinerySchedule`: the Save and Clear button handlers now each just append one event file instead of reading the whole array, changing one record, and writing it all back — the exact race this whole effort exists to close. `findScheduleRecord` (used everywhere schedule data is looked up in this app) is completely unchanged — it still just searches a plain array, only now that array comes from folding events instead of parsing one shared file.
+
+Ported the same treatment read-only into UTZLINE Projects (its own Joinery Register references this same file) and into UTZLINE Solid Surface Schedule (which reads the MAIN Scheduler's `joinery-schedule.json` for out-of-scope-item reminders, entirely separate from its own `solid-surface-schedule.json`, which this round does not touch). Three existing Playwright regression tests here that read the raw legacy `joinery-schedule.json` file directly (`run_schedule_crud_and_delay.js`, `run_plan_zoom_and_reset.js`, `run_date_weekday_format_and_weekend_shift.js`) were updated to read the folded result back through this app's own `readJoinerySchedule` test hook instead — not app-logic regressions, just tests that needed to stop peeking at a file this app no longer writes to directly. Full 10-file suite re-run clean afterward, zero regressions; UTZLINE Projects' and Solid Surface Schedule's own suites re-run clean too. This closes out the three follow-up rounds (`machining-flags.json`, `joinery-schedule.json`, on top of the original `joinery-status.json`) Andrew asked for on top of the original safety-net work. `service-worker.js` cache bumped to `utzline-scheduler-cache-v15`.
+
+**v14 (2026-09-24):** joinery-status.json v2 — Andrew, verbatim, on the coming scale: "we will have 30 people using this app in different stages, all coming back to the same database... needs to be foolproof and nevel lose data. some of this will be done via dropbox upload after the fact." The shared `joinery-status.json` used to be one JSON array file, rewritten whole on every save — risky with up to 15 people across five apps, some syncing in late via Dropbox. Replaced with one small immutable event file per status change, filed under `Project Saves/Joinery Status/<Level> - <Room> - <Code>/` — two writers can never collide, and a late Dropbox sync can never overwrite a newer save regardless of arrival order. The old file is migrated automatically and losslessly (once, idempotently) the first time any app in the family opens a project after this update, and left in place afterward, untouched. This app is a pure read-only consumer of `joinery-status.json` (never writes it) — `buildEnrichedRows` and its v13 job-note fields above are completely unchanged, just now folded from events instead of read off a shared array. `service-worker.js` cache bumped to `utzline-scheduler-cache-v14`.
+
+**v13 (2026-09-24):** Andrew, verbatim: *"on any scheduler, there needs to be a open job note button for each joinery item. between delay and view on plan."* Ported UTZLINE Install ITP's own read-only "View job note" feature into both this app's schedule tables — a job note is exclusively a PDF attachment (site instructions, a delivery docket, etc), stored one-per-file (oldest never deleted) in `<ProjectRoot>/Project Saves/Job Notes/<key>/`, `key = joineryItemPageKey(level, room, joineryId)` — the same identity triple `findJoineryStatus` already uses, so this needed no new item-matching scheme and no extra file read for the flag: `buildEnrichedRows` now also pulls `jobNote`/`jobNoteAt`/`jobNoteBy` off the exact same `joinery-status.json` record it already fetches.
+
+Because the Overall Schedule and per-project Schedule screens already share one row-building path (`scheduleRowCells`/`wireRowActions`), the new "Open job note" button — leading the row-actions cell, directly after the Delay column and before "View on plan", per Andrew's "between delay and view on plan" — needed adding in exactly one place to appear on both. It's rendered only for a row whose item actually has a note (gated on the `jobNote` flag), so there's no dead-end "no notes yet" dialog on every row, the same call Install ITP and UTZLINE Projects made for this same feature. Clicking it opens a small dialog (reusing this app's existing `.modal-backdrop`/`.modal`) listing every PDF newest-first (`jobNoteSortKey` finds the timestamp wherever it sits in the filename, so both the old prefix and newer suffix naming formats sort correctly), with an "Open" button per file that opens it in a new tab via an object URL.
+
+New Playwright test `run_job_note_button.js` seeds a fake project with two items — one with a real PDF in its Job Notes folder plus `jobNote: true` in `joinery-status.json`, one with neither — and confirms on **both** the Overall Schedule and a per-project Schedule screen: the button appears only on the item with a note, clicking it opens the dialog and lists the PDF with a working "Open" action, and the item without a note shows no button and no dialog. `service-worker.js` cache bumped to `utzline-scheduler-cache-v13`. Full regression suite re-run clean, zero regressions. Does not touch source.html, Install ITP, Manufacture ITP, or Projects in any way.
+
+**v12 (2026-09-23):** Andrew, verbatim: *"floor plans viewer on both schedules do not work. rewrite them using the same format as the itp apps."* Both entry points into this app's plan viewer — the Overall Schedule table's "View on plan" and the per-project Schedule screen's own "View on plan"/"Open plan" — land on the exact same shared plan-canvas screen (`openPlanCanvasForLevel`/`#planCanvasSvg`), so "both schedules" not working was one bug, not two.
+
+**Root cause:** `#planCanvasSvg` in `index.html` carried `viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"` — left over from an earlier draft, and never actually consistent with this app's own pan/zoom math. Every ITP app's own working plan viewer (Install ITP / Manufacture ITP / Delivery ITP's `#levelPlanSvg` — confirmed working per Andrew's own screenshot) has **no** `viewBox` at all: with none, an inline SVG's user-coordinate space is simply 1 unit = 1 CSS pixel of its rendered box (this app's CSS already sets `width:100%`/`height:100%` on it), which is exactly what `planFitToView`/`planClientToWorld`/`planZoomAt` assume when they compute `translate()`/`scale()` straight from the stage wrapper's `clientWidth`/`clientHeight` in CSS pixels. With the stray `viewBox` present, the browser instead first maps that 100×100-unit square onto the rendered box (letterboxed), so 1 user unit became roughly `renderedSize/100` pixels — a completely different scale than the one the JS math was computing in. A real plan image (e.g. 1200×900) positioned by that pixel-based math ended up placed almost entirely outside the tiny 0–100 unit square that was actually visible, so the whole stage rendered as a plain black rectangle: the image, tiles and markers were all present and correct in the DOM (`readLevelFile`'s flat-then-legacy dual-path reader and `planRenderMarkers`' rendering were never the problem — both already matched the ITP apps' own approach) but positioned far outside the sliver of user-space the `viewBox` actually let through.
+
+Reproduced with a real headless-Chromium (Playwright) screenshot before fixing anything: a seeded fake Projects-root folder with a real (non-1×1) floor-plan image and a marker at a known position rendered as an entirely blank black screen, with **zero** console or page errors logged — a silent rendering bug, not a load failure or thrown exception. This also explains why the existing `run_plan_zoom_and_reset.js` regression test never caught it: that test only checks the JS-side pan/zoom/click math against itself (`planView.tx/ty/scale` round-tripping through `planClientToWorld`), which stayed perfectly self-consistent throughout — the bug was purely in how the browser's own SVG `viewBox` transform sits on top of that math, invisible to a check that never inspects actual rendered pixels.
+
+**Fix:** removed `viewBox`/`preserveAspectRatio` from `#planCanvasSvg` entirely, matching the ITP apps' own `<svg id="levelPlanSvg">` byte-for-byte (no `viewBox`, width/height 100% via CSS only) — per Andrew's explicit instruction to "rewrite them using the same format as the itp apps." This was the one change needed: it puts this app's already-correct image loading and marker rendering into a coordinate space its own pan/zoom math actually agrees with, with no other change to the plan screen's behavior (marker-tap → Set Schedule dialog, zoom controls, reset view, etc. are all unchanged). Re-verified with the same seeded-project screenshot harness: the floor plan image now renders correctly, the marker sits exactly on its saved `(x, y)` position, pan/zoom/reset and marker-tap all still work. `service-worker.js` cache bumped to `utzline-scheduler-cache-v12`. Full 9-file suite re-run clean, zero regressions.
+
+**v11 (2026-09-23):** Andrew, verbatim: *"Manufacture status needs to be split up into 2 parts. We need a machined and a manufactured tab. All traceable by user name. Machined to have its own app. Called machine schedule. This is where the machinist can mark off a joinery item as complete. It will add their name and date time to the system."* A new `"machined"` stage is inserted into the shared `joinery-status.json` pipeline, between `"in_manufacture"` and `"manufactured"` — written exclusively by a brand-new sibling app, **UTZLINE Machine Schedule**, built in parallel with this round as its own separate codebase (not part of this repo). Scheduler stays strictly read-only against `joinery-status.json`: it never sets `"machined"` itself, it only displays it, same as every other status. `joineryStatusRank`/`joineryStatusLabel`/`joineryStatusIcon` gained a `"machined"` case (⚙️ / "Machined", rank 3), and both the Overall Schedule and Project Schedule screens' status filter dropdowns gained a matching "Machined" option between "In manufacture" and "Ready to dispatch". The status-history hover/tap popup needed no change — it already renders any history entry generically through those same label/icon functions.
+
+Inserting a stage in the *middle* of the pipeline, rather than appending one at the end like every earlier addition, shifts every rank from `"manufactured"` onward up by one (manufactured 3→4, delivered 4→5, installed 5→6). `computeDelayInfo()` has three hard-coded rank-threshold comparisons that were written against the old numbers, and each was re-derived against its real-world meaning rather than blindly bumped: the "has this item reached delivered-or-later" check (`rank >= 4` → `rank >= 5`) and the "is this item not yet installed" delivery-overdue exemption (`rank < 5` → `rank < 6`) both moved, since delivered/installed shifted — but the "is this item not yet in_manufacture" manufacture-start-overdue trigger (`rank < 2`) is **unchanged**, since `in_manufacture`'s own rank is still 2 and the new stage sits after it, not before. Bumping that third one too would have been the actual bug: an item newly sitting at "machined" (rank 3) would then have wrongly tripped "Manufacture start overdue" instead of correctly falling through to "On track"/"Delivery overdue" — the same treatment "manufactured" itself already got.
+
+Verified with a throwaway Node harness computing `computeDelayInfo()` under the old ranks/thresholds vs. the new ones across every pre-existing status (measured/in_manufacture/manufactured/delivered/installed, both pre- and post-delivery scenarios): byte-identical output on both sides, confirming the renumbering is a pure no-op for every status that didn't move. The new "machined" status was checked on its own and correctly does not trip "Manufacture start overdue" while correctly still tripping "Delivery overdue" once past the required date, same as "manufactured" always did. `service-worker.js` cache bumped to `utzline-scheduler-cache-v11`. Full 9-file suite re-run clean, zero regressions.
+
+**v10 (2026-09-23):** Andrew, verbatim: *"Where there is a table it needs to open the full width of the screen. To minimise scrolling."* The Overall Schedule and per-project Schedule screens now stretch to the full viewport width instead of being capped to this app's usual 980px centered content column — a new `.wide-table` CSS class (`max-width: none`) applied to just those two screens. Both tables already force a 900px `min-width` (`.sched-table`) that left little room once the old 980px screen cap, `main`'s own side padding, and the card's own padding were all subtracted — this removes most of the forced horizontal scroll on ordinary desktop/tablet viewports. `service-worker.js` cache bumped to `utzline-scheduler-cache-v10`. Full 9-file suite re-run clean. The identical fix shipped to UTZLINE Projects' own Joinery Register and Rework Register screens the same day — see that app's own README.
+
+**v9 (2026-09-23):** Andrew, on the same status-history popup added in v7: *"these status windows to show days between each process."* A gap marker now sits between each pair of consecutive history rows in the popup, showing the elapsed time between them — "Same day" for under a day, "1 day" (singular) for exactly one, otherwise "N days" — ported verbatim from the identical change made to UTZLINE Projects' own copy of this same popup the same day. No gap appears after the oldest (last) row, and an item with only one history entry shows that row with no gap marker at all.
+
+New regression test `run_status_history_gaps.js` covers three exact, hand-picked gaps (6 hours → "Same day", 8 days exactly, 1 day exactly), confirms a single-entry item shows no gap, and confirms the same gap markers render correctly from the Overall Schedule table too. Full suite re-run clean afterward: 9/9 passing, zero regressions.
+
+**v8 (2026-09-23):** Andrew, verbatim: *"once an item is dispatched, the delay column changes in the scheduler, (this could read Delivered early / Delivered late / Delivered on time (on time would be 2 days either side)."* `computeDelayInfo()` now takes the item's own actual `"delivered"`-stage timestamp (the same one v7's new Actual delivery column already shows) as a 4th argument. Once an item has genuinely reached "Delivered" or later status **and** has that real timestamp on record, the Delay column stops showing the earlier before-the-fact framing ("Delivery overdue" / "On track") and instead compares the real delivered date against the required delivery date: **Delivered late** (more than 2 days after), **Delivered early** (more than 2 days before), or **Delivered on time** (within that 2-day window either side, inclusive on both edges). An item that reached "Installed" without ever passing through a real "delivered" history entry — a genuine path, since signing off in Install ITP doesn't require Delivery ITP's own checklist to have been used first — has no actual delivered timestamp to compare, so it still falls through to the unchanged pre-existing rules. Every other delay scenario (not yet delivered at all) is completely unaffected by this round.
+
+New regression test `run_post_delivery_delay_outcome.js` covers every boundary of the new rule directly against `computeDelayInfo()` (exactly on the required date, exactly 2 days either side — still "on time" since the window is inclusive — and 3 days either side, which tips into late/early), confirms "installed" with a real delivered timestamp gets the same treatment as "delivered" itself, confirms "installed" with **no** delivered timestamp correctly falls back to the old rules, and confirms the pre-delivery scenarios are untouched — then checks the same thing end to end through the real rendered Delay column and pill class in the Project Schedule table from a seeded `joinery-status.json` history. Full suite re-run clean afterward: 8/8 passing, zero regressions.
+
+**v7 (2026-09-23):** Andrew, verbatim: *"scheduler status should have the same tracking on hover like the attached photo from the projects app. and delivery column should have scheduled delivery and actual delivery dates."* Both the Overall Schedule and Project Schedule tables' **Status** column now opens the exact same status-history popup as UTZLINE Projects' own Joinery Register — hover on desktop, tap to toggle on touch (no hover event there) — listing every `joinery-status.json` history entry newest-first, each with its icon/label, formatted date and time, and who made the change. `joineryStatusHistoryFor`/`showStatusHistoryPop`/`hideStatusHistoryPop` are a verbatim port of Projects' own functions (same markup/CSS classes), just reading this app's already-loaded status list instead of re-fetching it — this app is still strictly read-only against `joinery-status.json`, same as always. The **Required delivery** column is relabelled **Scheduled delivery** (same field, same sort key, only the header text changed — it needed to read correctly once a second delivery-related column sits beside it), and a new **Actual delivery** column shows the item's own `"delivered"`-stage history timestamp once it's reached that stage (an em dash otherwise, same convention as every other unset-date cell in this table). Purely a display change — Scheduler still writes nothing but its own `joinery-schedule.json`.
+
+New regression test `run_status_history_and_actual_delivery.js` covers: the renamed/added column headers and cell values; hovering a fully-historied item's status cell shows all four history rows in the right order with the right icon/date/attribution; an item with no `joinery-status.json` record at all shows the popup's empty state rather than erroring; a click/tap toggles the popup open and closed; clicking elsewhere on the page closes it; navigating away (e.g. back to Home) closes it rather than leaving it stuck on screen; and the same popup also works from the Overall Schedule table. Full suite re-run clean afterward: 7/7 passing, zero regressions (two pre-existing tests' hardcoded `<td>` column indices were updated for the new column — `run_schedule_crud_and_delay.js` and `run_overall_and_plan_view.js` — since their row layout, not their behavior, shifted).
+
+**v6 (2026-09-23):** Andrew, verbatim: *"scheduler doesnt utilise the viewer properly. floor plan in not usable. copy the viewer platform we use in the itps for floor plans"* — following straight on from an earlier, briefer report the same day ("floorplan does not load into scheduler."). Investigation found **three** real, independent bugs, all fixed here:
+1. `readLevelFile` only ever tried the new flat `Project Saves/Floor Plans/<Project> - <Level>.json` shape, with no fallback to the older per-Level-folder shape (`<Level>/saves/<Level>.utzline.json`) every ITP app already falls back to — so a legacy-shaped project's plan silently never loaded. `readLevelFile` now tries flat first and falls back to a new `readLegacyLevelFile`, matching every ITP app's own dual-path loader.
+2. **The bigger of the two, found while fixing #1:** the level-plan picker's own level list (`listExistingLevels`) was *also* built purely from that same flat Floor Plans directory, via the old `listLevelFiles()` — so a fully legacy-shaped project (no "Project Saves" folder at all, which describes most of Andrew's real, not-yet-migrated projects) never even offered a level to open in the first place, meaning fix #1's fallback never got a chance to run for those projects at all. `listExistingLevels` now detects the project's shape once (`isFlatProject`, the same helper UTZLINE Projects and every ITP app already use) and either reads the flat files' own `name` fields or lists the project's own subfolders directly — excluding the same reserved project-wide folders (`itp-install`/`itp-manufacture`/`itp-delivery`/the old `"itp"` name/`"Project Saves"` itself) every sibling app already excludes from its own level list.
+3. Even once a plan loaded, its markers could render as unlabeled bare dots: `planRenderMarkers()` only drew a label when a marker's own saved `label.text` field was truthy, but this family's label-text convention (`roomlinkDisplayText`, shared with Site Measure/Viewer/every ITP app) computes the label fresh from `joineryCode`/`roomName` rather than storing it, so plenty of real markers had no stored `label.text` at all. Every roomlink marker's label is now always computed via `roomlinkDisplayText` and drawn with a white halo behind it for legibility over any plan image, matching Install ITP's own `buildPlanMarkerEl`. A marker with `hidden: true` is still excluded entirely, same as before.
+
+New regression test `run_legacy_plan_fallback.js` covers a fully legacy-shaped project end to end: the level shows up in the picker, its plan image and a real computed label render even with no stored `label` field at all, a `hidden: true` marker on the same level is excluded, and clicking the now-visible marker still opens the real Set Schedule dialog for the correct item. Full suite re-run clean afterward: 6/6 passing, zero regressions.
+
+**v5 (2026-09-23):** Andrew, verbatim: *"implement the username as per the delivery itp throughout the entire system, but instead of it opening a popup, the button is the selector, when you pick a name it opens a numberpad to input the pin (4 digit pin)."* Scheduler had no identity/name feature of its own before this — it's added here from scratch, copied verbatim from UTZLINE Delivery ITP's own reference implementation of this exact pattern. A new `<select id="identitySelector">` on the Home screen (next to the project list) **is** the button: its own native dropdown lists every known name plus "+ Add a new name…", and choosing one immediately opens a real on-screen numberpad (never a popup) to verify its 4-digit PIN. Adding a brand-new name still types the name as plain text first (a small dedicated prompt, since this app had no existing generic-prompt modal to reuse), then chooses and confirms a PIN via two numberpad rounds, then ticks which apps to show it in (pre-checked "Scheduler"). This reads/writes the same `utzline-identity` IndexedDB (origin-scoped — a name set in any UTZLINE app shows up in all of them) and the same `<ProjectsRoot>/utzline-users.csv` registry every sibling app now shares — the same file, not a separate copy. As a small, disclosed enhancement while wiring this in, `joinery-schedule.json` records now also carry a read-only `setBy` field, stamped with whoever was signed in on this device when Save was pressed — purely informational, it changes no existing gating, matching, or validation. Does NOT touch Site Measure, Viewer, Install ITP, Manufacture ITP, Delivery ITP, or Projects in any way.
+
+**v4 (2026-09-23):** Andrew, verbatim: *"show both these dates like the bottom one, but with the day (ie.monday) at the start. if the start date is a weekend, move to the closest monday directly after"* — about the Set Schedule dialog's two dates. `formatDateDisplay()` (used everywhere a date is shown as text in this app, not just this dialog) now leads with the weekday, e.g. "Thu, Aug 13, 2026" instead of "Aug 13, 2026". The Required Delivery Date field (a native date-picker input, which can't show a weekday inline) gained a new read-only line right below it showing that same formatted style, live-updating as you change the date — matching the Computed Manufacture Start Date box's own display style, per "show both these dates like the bottom one." Separately, `subtractBusinessDays()` now pushes its result forward to the next Monday if it would otherwise land on a Saturday or Sunday — a real edge case with a 0-day lead time (the function then returns the required delivery date itself unchanged, with no weekday check), not a hypothetical: a 0-lead-time item whose own delivery date is a weekend would previously have shown a weekend "manufacture start date," which is what's now corrected. With any lead time above 0 the walk-back already only ever lands on a weekday, so this is a safety net for that one case, not a change to the everyday calculation.
+
+**v3 (2026-09-23):** Andrew, verbatim: *"scheduler floor plan needs the zoom function, reset to centre, zoom on scroll functionality, mouse click on plan to change the dates. currenty only has pan."* Added a small zoom control group (zoom in / zoom out / **Reset view**) to the Level Plan topbar. Scroll-wheel zoom (centred on the cursor) and two-finger pinch-zoom were already implemented under the hood — copied verbatim from UTZLINE Projects' own plan canvas along with the rest of this viewer — there just wasn't a visible affordance for it, or any way to reset drift back to a known-good view; **Reset view** re-runs the exact fit-to-screen-centred transform the plan already opens with. Zoom buttons use the same 1.25x/0.8x step and viewport-centre anchor Site Measure's own zoomIn/zoomOut buttons use in `source.html`, and share `planZoomAt`'s existing clamp (scale 0.05–20). Also, per Andrew's 4th ask: **a plain tap/click on a marker now opens the real Set Schedule dialog directly**, the same dialog right-click/long-press already opened (`onPlanTap` now delegates straight to `onPlanRightClickOrLongPress`) — previously a plain tap only showed a read-only status/schedule summary toast, a disclosed "accidental-tap safety" design choice from v1 that this explicit request overrides. Right-click and long-press are unchanged and still work exactly as before, now simply a redundant second path to the same dialog.
+
+**v2 (2026-09-23):** added the Work Order # column, requested alongside the same change to UTZLINE Projects ("This and the projects app needs a work order # section"). Scheduler only *displays* it — it reads `workOrderNo` straight off each `joinery-items.json` record (the field Projects now writes at creation time) in both the Overall and Project Schedule tables, in the Level Plan's tap summary and Set Schedule dialog subtitle, and in every text search box, with the same "—" placeholder convention as every other blank cell for items created before the field existed. Scheduler never writes this field — it's read-only here, same as `description` or `joineryId`.
+
+This folder is the self-contained, installable **UTZLINE Scheduler** app — a
+**new, separate** app in the UTZLINE family, requested directly by Andrew:
+
+> "now create a schedular app (seperate) that runs off all this info. it has
+> a page thats a sortable overall schedule and also project specific
+> viewable shcedules, but the dates are set by right clicking on your
+> joinery plan in the scheduler and adding a required delivery date, and a
+> manufacture lead time in business days (defaults to 30 days), this gives
+> a manufacture start date that is the delivery date - the manufacture
+> lead time. It creates a sortable database similar to the joinery
+> register. It also shows the current status and flags any delays.
+> Do not change any other apps. they are all working, just build the
+> standalone scheduler"
+
+**Like Install ITP / Manufacture ITP / UTZLINE Projects, this is NOT built
+from `source.html`.** It's its own small, purpose-built codebase
+(`index.html`) with its own `manifest.json` and `service-worker.js`,
+because it needs a different kind of screen (sortable schedule tables plus
+a lightweight read-only plan viewer), not a drawing canvas. There's no
+`build.py` here — whatever's in `index.html` is what ships.
+
+## What it reads vs. what it owns
+
+Scheduler reads the **same Projects folder** every other app in the family
+uses, and is **strictly read-only** against every file another app already
+owns:
+
+- `joinery-items.json` — the project's joinery item list (read-only)
+- `joinery-status.json` — the shared, forward-only status pipeline
+  (read-only; Site Measure's "Mark as check measured" and each ITP's own
+  checklist sign-off/open remain the only writers anywhere in the family)
+- `Project Saves/Floor Plans/<Project> - <Level>.json` — a level's floor
+  plan image and its roomlink markers (read-only)
+- `Project Saves/UTZLINE Sub Orders/Orders/<Level> - <Room> - <JoineryId>.json`
+  — UTZLINE Sub Orders' attached orders per item (the Ordered column, v26,
+  and the Joinery Item page's Sub orders card, v27). **The one exception
+  to "strictly read-only" (v27):** the Received checkbox rewrites only
+  `received`/`receivedDate` on an already-attached order in this existing
+  file (fresh read, shallow copy, whole array back) — it never creates a
+  file here and never touches Sub Orders' `Inbox/` or `Files/` (the card
+  only looks files up there to open them). See the v27 entry above.
+
+The **only** file Scheduler ever creates is its own new file, one per
+project, alongside those existing files (plus the v27 Sub Orders
+`received`/`receivedDate` exception above):
+
+- `joinery-schedule.json` — this app's own schedule records: `{ level,
+  room, joineryId, requiredDeliveryDate, manufactureLeadTimeDays,
+  manufactureStartDate, updatedAt, setBy }`, matched to a joinery item by
+  the same `(level, room, joineryId)` triple `joinery-status.json` already
+  uses. `setBy` (added v5) is read-only informational attribution —
+  whoever was signed in via the identity selector when Save was pressed,
+  or `""` if nobody was — and never gates or validates anything.
+
+Also, at the **Projects-root level** (a sibling of every project folder,
+not inside one), Scheduler now reads/writes the same shared
+`utzline-users.csv` name+PIN registry every other UTZLINE app uses (added
+v5, see "Shared name+PIN identity" below).
+
+Nothing about how a project is organised changes for Site Measure, Viewer,
+Install ITP, Manufacture ITP, or Projects to keep working — none of them
+know or care that this new file exists.
+
+## Shared name+PIN identity (v5)
+
+Andrew, verbatim: *"implement the username as per the delivery itp
+throughout the entire system, but instead of it opening a popup, the
+button is the selector, when you pick a name it opens a numberpad to
+input the pin (4 digit pin)."*
+
+Scheduler had no identity feature of its own before this. It's copied
+verbatim from UTZLINE Delivery ITP's own reference implementation of this
+pattern:
+
+- A `<select id="identitySelector">` on the Home screen **is** the button
+  — its own dropdown lists every known name plus "+ Add a new name…". No
+  separate "Set your name" button or popup.
+- Picking an existing name opens a real on-screen 4-digit numberpad to
+  verify its PIN — a wrong PIN shakes/clears the pad for another try and
+  never changes the signed-in identity; cancelling reverts the selector to
+  whoever was previously signed in.
+- Picking "+ Add a new name…" asks for the name as plain text first (a
+  small dedicated prompt — this app had no existing generic-prompt modal
+  to reuse), rejects a case-insensitive duplicate, then chooses and
+  confirms a 4-digit PIN via two numberpad rounds, then shows a "Show me
+  in" checklist of every UTZLINE app (pre-checked "Scheduler" — reference
+  only, for Andrew's own admin use; it never restricts sign-in anywhere).
+- The name+PIN itself lives in `<ProjectsRoot>/utzline-users.csv`
+  (`Name,PIN,ShowInApps`, PIN in plain text on purpose — a reference-only
+  attribution registry Andrew can inspect or hand-edit directly, not a
+  real access-control system) — the exact same file every sibling UTZLINE
+  app reads and writes, at the Projects-root level. Who's currently signed
+  in on *this device* lives in the same shared `utzline-identity`
+  IndexedDB database every sibling app already uses (origin-scoped, so a
+  name set in one UTZLINE app shows up in all of them).
+- No in-app "forgot PIN" flow, by design — resetting or clearing a PIN, or
+  freeing up a name, is a plain file-manager/spreadsheet edit to
+  `utzline-users.csv`.
+
+## What it does
+
+1. **Choose the Projects folder** (same one as every other app) — the
+   folder handle is remembered, same reconnect-after-permission-reset flow
+   the rest of the family uses. Requests `readwrite` up front (the only
+   write is this app's own schedule file, the moment someone sets a
+   schedule for the first time).
+2. **Home** — an "Open Overall Schedule" shortcut, plus the list of
+   projects found in the folder.
+3. **Overall Schedule** — every joinery item, across every project, in one
+   sortable table: Project / Level / Room / Joinery ID / Description / Work
+   order # / Scheduled delivery / Actual delivery / Manufacture start /
+   Lead time / Status / Delay, plus "View on plan" and "Edit schedule"
+   actions per row. Filterable by project, status, delay state, and a text
+   search (which also matches work order #). Hovering (or tapping, on
+   touch) the Status cell opens a popup listing that item's full status
+   history — every stage it's passed through, when, and who changed it
+   (same interaction as UTZLINE Projects' own Joinery Register, added v7).
+4. **Project Schedule** — the same table scoped to one project (no Project
+   column), plus a way to jump straight into any level's plan even before
+   anything on it has been scheduled.
+5. **Level Plan** — a read-only pan/zoom view of a level's saved floor plan
+   and its markers (the same rendering the rest of the family already
+   uses). Drag to pan; scroll-wheel or pinch to zoom (centred on the
+   cursor/pinch midpoint); zoom in/out buttons and a **Reset view** button
+   (fits the whole plan back into view, centred, undoing any pan/zoom
+   drift) sit in the topbar. **Click a marker** (right-click and
+   press-and-hold/long-press also still work, as alternate paths to the
+   same place) to open the **Set Schedule** dialog for that item: Required
+   Delivery Date and Manufacture Lead Time (business days, defaults to
+   30), with the computed Manufacture Start Date shown live as you type,
+   plus a "Clear schedule" option.
+6. **Status & delay flags** — status is read live from the shared
+   `joinery-status.json` pipeline (Created / Check measured / In
+   manufacture / Ready to dispatch / Delivered / Installed). Delay is
+   Claude's own disclosed design call, since Andrew asked only that the
+   app "flags any delays":
+   - **No schedule set** — neutral, not counted as a delay.
+   - **Delivery overdue** — today is past the required delivery date and
+     the item hasn't reached "Installed" yet (the most severe flag;
+     "Delivered" is a reserved-but-currently-unreachable stage everywhere
+     else in this family too, so "Installed" is the real completion
+     marker).
+   - **Manufacture start overdue** — today is past the computed
+     manufacture start date and the item hasn't reached "In manufacture"
+     yet.
+   - **On track** — neither of the above.
+   - Once an item has genuinely reached "Delivered" or later **and** has a
+     real delivered-stage timestamp on record (added v8, per Andrew:
+     "once an item is dispatched, the delay column changes"), the flag
+     above stops applying and instead compares that actual delivered date
+     against the required delivery date: **Delivered late** (more than 2
+     days after), **Delivered early** (more than 2 days before), or
+     **Delivered on time** (within that 2-day window either side,
+     inclusive). An item signed off as "Installed" without ever having a
+     real delivered timestamp (Delivery ITP's own checklist is optional,
+     not mandatory) still falls back to the rules above.
+
+## Known, disclosed limitations
+
+- **No public-holiday calendar.** The business-day math (required delivery
+  date minus the manufacture lead time) only skips Saturdays and Sundays —
+  no holiday calendar exists anywhere in this ecosystem yet, so a lead
+  time spanning a public holiday will be a little optimistic. Consistent
+  with how every other date-adjacent feature in this family has handled
+  the same gap so far.
+- **Legacy, not-yet-migrated projects.** The plan viewer reads a level's
+  markers from `Project Saves/Floor Plans/<Level>.json`. A project that
+  hasn't been opened once in Site Measure or UTZLINE Projects since the
+  2026-09-22 "full flat structure" cutover won't have that file yet — its
+  items still appear correctly in both schedule tables (`joinery-items.json`
+  is unaffected), but "View on plan" / right-click-to-schedule won't find
+  a plan for it until it's opened once in one of those apps.
+- **Same item-matching caveat as `joinery-status.json` elsewhere in this
+  family**: two joinery items that ever collide on the exact same
+  `(level, room, joineryId)` triple are treated as one. No stable per-item
+  ID exists anywhere in this ecosystem yet to do better.
+
+## Accent color
+
+Blue/teal (`#1f8fbf`) — the one hue not already used by a sibling app
+(Site Measure/Viewer are orange-red, Install ITP is green, Manufacture ITP
+is purple, Projects is crimson).
+
+## Tests
+
+`pdftest-scheduler/` (Playwright against a fake File System Access API,
+same convention as the rest of the family):
+
+- `run_schedule_crud_and_delay.js` — setting/recomputing/clearing a
+  schedule through the real Save/Clear buttons, confirms
+  `joinery-items.json` is never touched, and all six delay-flag scenarios.
+- `run_overall_and_plan_view.js` — cross-project aggregation and filters
+  on the Overall Schedule screen, unset-dates-always-sort-last, and that a
+  plain click and right-click/long-press on a plan marker both open the
+  Set Schedule dialog for the correct item.
+- `run_plan_zoom_and_reset.js` — the Level Plan's zoom/reset-view controls:
+  a real wheel event changes the rendered transform's scale (zoomed toward
+  the cursor), the **Reset view** button restores a known-good fit-to-
+  screen transform after pan+zoom drift, a plain click on a marker opens
+  the Set Schedule dialog and a date can be saved through it, and
+  right-click still also opens the same dialog (regression check).
+- `run_date_weekday_format_and_weekend_shift.js` — the v4 date-display
+  change: the delivery-date field's new weekday-led read-only line and the
+  computed-start box both format as "Thu, Aug 13, 2026"; an ordinary
+  (>0-day lead) computation always lands on a weekday, unaffected; the
+  0-lead-time edge case (delivery date itself a Saturday, then a Sunday) is
+  pushed forward to the very next Monday, confirmed both in the live
+  preview and in what's actually saved to `joinery-schedule.json`.
+- `run_identity_pin.js` — the v5 shared name+PIN identity selector: adding
+  a brand-new name through the real UI (name prompt → choose-PIN numberpad
+  → confirm-PIN numberpad, including a mismatched-confirm-then-retry case)
+  → the "show me in" app-checks modal (pre-checked "Scheduler") → the
+  correct row written to `utzline-users.csv` at the Projects-root level,
+  and the name then appearing as a real selector option; picking an
+  existing name opens a numberpad naming them, a wrong PIN is
+  rejected/retryable without changing the signed-in identity, and the
+  correct PIN succeeds; cancelling the numberpad reverts the selector; and
+  adding a case-insensitive duplicate name is rejected without touching
+  the CSV.
+- `run_legacy_plan_fallback.js` — the v6 floor-plan fix: a fully
+  legacy-shaped project (no "Project Saves" folder at all) still offers its
+  level in the level-plan picker, its plan image loads via the legacy
+  fallback, a marker with no stored `label` field at all still renders a
+  real computed label (not a bare dot), a `hidden: true` marker is
+  excluded, and clicking the visible marker still opens the real Set
+  Schedule dialog for the correct item.
+- `run_status_history_and_actual_delivery.js` — the v7 status-history
+  popup + delivery columns: renamed/added column headers and values,
+  hovering a fully-historied item shows all its history rows in the right
+  order with the right icon/date/attribution, an untouched item shows the
+  popup's empty state, click/tap toggles it, clicking elsewhere or
+  navigating away closes it, and the same popup also works from the
+  Overall Schedule table.
+- `run_post_delivery_delay_outcome.js` — the v8 post-delivery delay
+  outcome: every boundary of the rule against `computeDelayInfo()` directly
+  (exactly on the required date and exactly 2 days either side both read
+  "on time"; 3 days either side tips into late/early), "installed" with a
+  real delivered timestamp gets the same treatment as "delivered" itself,
+  "installed" with no delivered timestamp correctly falls back to the
+  pre-existing rules, pre-delivery scenarios are untouched, and the same
+  outcome renders correctly end to end in the real Delay column and pill
+  class from a seeded `joinery-status.json` history.
+- `run_status_history_gaps.js` — the v9 "days between each process" gap
+  markers: three exact, hand-picked gaps (6 hours → "Same day", 8 days
+  exactly, 1 day exactly), a single-entry item shows no gap at all, and the
+  same gap markers render correctly from the Overall Schedule table too.
+
+- `run_sweep_back_button.js` — the v19 device/browser Back button: Home →
+  Overall → Back → Home; Home → project → item page → Back → project → Back
+  → Home (one screen per press); project → plan → Back closes the plan; with
+  the Set Schedule dialog, the Job notes dialog, or the status-history
+  popover open, Back closes *that* and stays on the screen, and the next
+  Back steps back — all through Playwright's real `goBack()`.
+- `run_sweep_idb_single_connection.js` — the v19 IndexedDB fix: `indexedDB.open`
+  wrapped in an init script and counted across boot, choosing a folder,
+  every screen, a Save, a Clear and two Refreshes: exactly one open per
+  database (`utzline-scheduler-db`, `utzline-identity`).
+- `run_sweep_unreadable_not_empty.js` — the v19 "unreadable is not empty"
+  rule against real fake-fs files that exist but can't be read: adding a
+  name never writes a `utzline-users.csv` missing everyone else's row and
+  says so; a PIN check reports the read problem, not "Incorrect PIN"; a
+  truncated legacy `joinery-schedule.json` / `joinery-status.json` creates
+  NO events folder and the table says "couldn't read", then Refresh
+  migrates correctly once the file reads; one unreadable event file stops
+  the Set Schedule dialog prefilling the previous record.
+- `run_sweep_instant_paint_cache.js` — the v19 snapshots: Home / Overall /
+  project snapshots saved from live reads (rows without handles); a Save
+  updates the row in place with only the write's own 2 folder calls; the
+  "Clear schedule" button and the level-plan row are genuinely hidden when
+  they should be; after a reload with every project-level read made to hang,
+  all three screens still paint their last-known rows with the refreshing
+  note, and a row action on a snapshot row still works.
+
+- `run_hide_status_tickboxes.js` — the v19 "Hide delivered" / "Hide
+  installed" tick boxes on both tables: default unticked; each box hides
+  exactly its own stage and the "Showing N of M items" count follows;
+  search applies on top; unticking restores the rows; filtering makes zero
+  folder calls; the choice survives a sort re-render and a full page reload
+  (localStorage), with the tables loading already filtered.
+
+Run all sixteen with `./run_all.sh` from that folder.

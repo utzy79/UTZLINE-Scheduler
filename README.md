@@ -1,6 +1,8 @@
 # UTZLINE Scheduler — installable app
 
-**Current version: v47 (RC 1.0)** (its own independent version line, separate from every other app in the family — bump this line, and add a dated entry below, every time a new build ships.)
+**Current version: v48 (RC 1.0)** (its own independent version line, separate from every other app in the family — bump this line, and add a dated entry below, every time a new build ships.)
+
+**v48 (2026-10-02) — RC 1.0: the item page shows the room's site measure.** Same change as Projects v61: the Site measures card and overlay read `Room - <level> - <room>/` first, then the item's own older folder.
 
 **v47 (2026-10-02) — RC 1.0: builder logo on the top bar, logos folder, reversed Machined, drag and drop only.**
 

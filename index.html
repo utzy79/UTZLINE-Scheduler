@@ -2353,10 +2353,26 @@
     return p(d.getFullYear() % 100) + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + "-" + p(d.getMinutes()) + "-" + p(d.getSeconds()) + (ms ? "-" + p(d.getMilliseconds(), 3) : "");
   }
 
+  // (2026-10-02) One site measure covers every item linked to a room: the folder under Site Measures that holds
+  // it is named by level + room ("Room - L1 - Room 101"), never by an item. A long name is cut and given a short
+  // hash so two long room names can't meet. -> a name that goes on disk as given.
+  function roomMeasureKey(level, room){
+    var l = clean(level, 14), r = clean(room, 24) || "Room";
+    var cut = String(level == null ? "" : level).length > 14 || String(room == null ? "" : room).length > 24;
+    var k = "Room - " + (l ? l + " - " : "") + r;
+    if (cut || l !== String(level == null ? "" : level).trim() || r !== String(room == null ? "" : room).trim()){
+      var h = 0, src = low(level) + "|" + low(room);
+      for (var i = 0; i < src.length; i++) h = (h * 31 + src.charCodeAt(i)) >>> 0;
+      var hs = h.toString(36).slice(0, 4);
+      if (cut) k = k + " ~" + hs;
+    }
+    return k;
+  }
+
   window.UtzItemFiles = {
     version: 1, MAX: MAX,
     clean: clean, baseOf: baseOf, valid: valid, assign: assign, register: register, fileKey: fileKey,
-    initials: initials, stamp: stamp, tripleKey: tripleKey,
+    initials: initials, stamp: stamp, tripleKey: tripleKey, roomMeasureKey: roomMeasureKey,
     _maps: function(){ return maps; }
   };
 })();
@@ -9995,7 +10011,7 @@
      page -- shared code, see the UTZLINE-ITEM-EXTRAS block in the page head. */
   var itemExtras = UtzItemExtras.create({ app: "Scheduler", confirmPin: function(n, w){ return confirmOwnPin(n, w); }, toast: showToast, keyFor: joineryItemPageKey, eventsCacheId: function(project, h){ return eventsCacheId(h); }, writeFileText: writeFileText, getHandle: ensureRowProjectHandle, getUser: function(){ return deviceUserName; },
     // the History card (same list as UTZLINE Projects)
-    statusLabel: joineryStatusLabel, formatWhen: formatHistoryDate, formatDate: formatDateDisplay, readOrders: function(row, h){ return readSubOrdersForItem(h, row.level, row.room, row.joineryId); }, listOverlays: function(row, h){ return listJoineryOverlaysForItem(h, joineryItemPageKey(row.level, row.room, row.joineryId)); }, listJobNotes: function(row, h){ return listJobNotes(h, joineryItemPageKey(row.level, row.room, row.joineryId)); } });
+    statusLabel: joineryStatusLabel, formatWhen: formatHistoryDate, formatDate: formatDateDisplay, readOrders: function(row, h){ return readSubOrdersForItem(h, row.level, row.room, row.joineryId); }, listOverlays: function(row, h){ return listJoineryOverlaysForItem(h, smKeys(row.level, row.room, joineryItemPageKey(row.level, row.room, row.joineryId))); }, listJobNotes: function(row, h){ return listJobNotes(h, joineryItemPageKey(row.level, row.room, row.joineryId)); } });
   var ROW_CLICK_SKIP = "button, a, input, select, textarea, label, .status-cell, .ordered-cell, .cut-cell, .completion-cell, .row-actions, .ix-cut-cell, .ix-notes-cell";
   function wireRowClick(tr, open){
     var down = null;
@@ -10376,7 +10392,9 @@
     if (!m) return stamp || "";
     return m[1] + " " + m[2] + ":" + m[3];
   }
+  function smKeys(level, room, itemKey){ return room ? [UtzItemFiles.roomMeasureKey(level, room), itemKey] : [itemKey]; } // (2026-10-02) one site measure per room: its folder, then the item's own older one
   function listJoineryOverlaysForItem(projectHandle, key){
+    if (Array.isArray(key)) return Promise.all(key.map(function(k){ return listJoineryOverlaysForItem(projectHandle, k); })).then(function(a){ return [].concat.apply([], a); });
     return getJoineryOverlaysDirForItem(projectHandle, key).then(function(dirH){
       return listFilesInDir(dirH, function(name){ return /\.json$/i.test(name); });
     }, function(){ return []; }).then(function(list){
@@ -10709,7 +10727,7 @@
     itemDeliveryLocation.innerHTML = "<p class=\"sub\" style=\"margin:0;\">Loading…</p>";
     renderJoineryItemSubOrders(row);
 
-    readLatestJoineryOverlayForItem(row.projectHandle, key).then(function(overlay){
+    readLatestJoineryOverlayForItem(row.projectHandle, smKeys(row.level, row.room, key)).then(function(overlay){
       if (activeJoineryItemRow !== row) return; // navigated away before this resolved
       if (!overlay){
         itemOverlaysList.innerHTML = "<p class=\"sub\" style=\"margin:0;\">No Site Measure overlay saved yet for this item.</p>";

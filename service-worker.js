@@ -376,7 +376,7 @@ var ICON_VERSION = "v1";
 // v41 (2026-09-30): RC 1.0 -- day / night mode, status icons on the plan (blue, 25% smaller), tick-box status filters, hide / rearrange columns, one drawing for several items, the builder's logo.
 // v42 (2026-10-01): RC 1.0 -- Windows' 260-character path limit: shorter record names in the event store (see README)
 // v47 (2026-10-02): RC 1.0 -- builder logo far right of the top bar, logos folder, reversed Machined, dark-mode controls, drag and drop only.
-var CACHE_NAME = "utzline-scheduler-cache-v58";
+var CACHE_NAME = "utzline-scheduler-cache-v62";
 
 var PRECACHE_URLS = [
   "./exceljs.min.js", // v28: spreadsheet library for the daily Excel backup (only ever loaded on a PC)
@@ -384,6 +384,8 @@ var PRECACHE_URLS = [
   "./pdf-lib.min.js", // v33: stamps job notes FOR CONSTRUCTION (only loaded when a job note is added)
   "./",
   "./index.html",
+  "./pdf.min.js", // (2026-10-04) the in-app PDF viewer (shared/pdf-view)
+  "./pdf.worker.min.js",
   "./manifest.json?v=" + ICON_VERSION,
   "./icons/icon-192.png?v=" + ICON_VERSION,
   "./icons/icon-512.png?v=" + ICON_VERSION,
